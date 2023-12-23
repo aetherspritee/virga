@@ -3,7 +3,7 @@
 *.p
 *.mieff
 *.json~
-
+**/*.png
 # Jupyter Notebooks
 .ipynb_checkpoints
 notebooks/*.html
