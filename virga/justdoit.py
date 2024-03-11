@@ -1,17 +1,9 @@
-import astropy.constants as c
-import astropy.units as u
 import pandas as pd
 import numpy as np
 import os
 from scipy import optimize
 from atmosphere import Atmosphere
-from root_functions import (
-    vfall,
-    vfall_find_root,
-    qvs_below_model,
-    solve_force_balance,
-)
-from calc_mie import calc_new_mieff
+from root_functions import qvs_below_model
 import gas_properties
 import pvaps
 
