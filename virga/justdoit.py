@@ -5,6 +5,8 @@ import numpy as np
 import os
 from scipy import optimize
 import PyMieScatt as ps
+from matplotlib import pyplot as plt
+
 
 from root_functions import (
     advdiff,
@@ -73,7 +75,6 @@ def compute(
     dict
         Dictionary output that contains full output. See tutorials for explanation of all output.
     """
-    print("LMAOOOOOOOOOOOO")
     mmw = atmo.mmw
     mh = atmo.mh
     condensibles = atmo.condensibles
@@ -140,6 +141,8 @@ def compute(
             fsed_in = atmo.fsed - atmo.eps
         elif atmo.param == "const":
             fsed_in = atmo.fsed
+
+        # @dusc: FeelsGoodMan Clap
         qc, qt, rg, reff, ndz, qc_path, mixl, z_cld = eddysed(
             atmo.t_level,
             atmo.p_level,
@@ -207,7 +210,7 @@ def compute(
 
     # Finally, calculate spectrally-resolved profiles of optical depth, single-scattering
     # albedo, and asymmetry parameter.
-    print("MOOOOOOOOOOOOOOOOOOOOOIN")
+    print("Starting optical calculations")
     opd, w0, g0, opd_gas = calc_optics(
         nwave,
         qc,
@@ -413,12 +416,10 @@ def calc_optics(
                     )
 
                 r2 = rg[iz, igas] ** 2 * np.exp(2 * np.log(sig) ** 2)
-                print(f"{sig = }")
-                print(f"{rg[iz, igas] = }")
-                print(f"{r2 = }")
                 opd_layer[iz, igas] = 2.0 * PI * r2 * ndz[iz, igas]
 
                 #  Calculate normalization factor (forces lognormal sum = 1.0)
+                # TODO: @dusc: whats this
                 rsig = sig
                 norm = 0.0
                 for irad in range(nrad):
@@ -431,8 +432,10 @@ def calc_optics(
                 # normalization
                 norm = ndz[iz, igas] / norm
 
+                # TODO: @dusc: check ssa formulae to try and understand what this monstrosity is
                 for irad in range(nrad):
                     rr = radius[irad]
+                    # @dusc: this refers to
                     arg1 = dr[irad] / (np.sqrt(2.0 * PI) * np.log(rsig))
                     arg2 = -np.log(rr / rg[iz, igas]) ** 2 / (2 * np.log(rsig) ** 2)
                     pir2ndz = norm * PI * rr * arg1 * np.exp(arg2)
@@ -1532,6 +1535,13 @@ class Atmosphere:
         # convert bars to dyne/cm^2
         self.p_level = np.array(df["pressure"]) * 1e6
         self.t_level = np.array(df["temperature"])
+        print(f"P-T Profile {len(self.p_level) = }, {len(self.t_level) = }")
+        print(self.p_level)
+        print(self.t_level)
+        plt.yscale("log")
+        plt.gca().invert_yaxis()
+        plt.plot(self.t_level[::-1], self.p_level[::-1])
+        plt.show()
         if alpha_pressure is None:
             self.alpha_pressure = min(df["pressure"])
         else:
@@ -1689,8 +1699,8 @@ class Atmosphere:
                 if self.verbose:
                     print(
                         """Convective overshoot was turned on. The convective heat flux
-                    has been adjusted such that it is not allowed to decrease more than {0} 
-                    the pressure. This number is set with the convective_overshoot parameter. 
+                    has been adjusted such that it is not allowed to decrease more than {0}
+                    the pressure. This number is set with the convective_overshoot parameter.
                     It can be disabled with convective_overshoot=None. To turn
                     off these messages set verbose=False in Atmosphere""".format(
                             convective_overshoot
@@ -1917,7 +1927,7 @@ def calc_mie_db(gas_name, dir_refrind, dir_out, rmin=1e-8, nradii=60):
             cos_qscat_gas,
         )
 
-        # prepare format for old ass style
+        # prepare format for old ass style # @dusc: ayo
         wave = [nwave] + sum([[r] + list(wave_in) for r in radius], [])
         qscat = [nradii] + sum([[np.nan] + list(iscat) for iscat in qscat_gas.T], [])
         qext = [np.nan] + sum([[np.nan] + list(iext) for iext in qext_gas.T], [])

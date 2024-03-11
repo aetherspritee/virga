@@ -406,9 +406,14 @@ def calc_new_mieff(wave_in, nn, kk, radius, rup, fort_calc_mie=False):
     # number of radii sub bins in order to smooth out fringe effects
 
     # TODO: @dusc:
+    # why are multiple radii calculated? how are these results used? Is this procedure compatible with the use of
+    # more sophisticated models for particles in the atmoshpere?
+
+    # TODO: @dusc:
     # for every specificed radius, a maximum radius is specified. Then, (sub_radii) different radii between (radius)
     # and (rup) will be used for mie calculation. The resulting cross sections are then averaged.
     # Why is this done? How does this change the results?
+
     sub_radii = 6
 
     nradii = len(radius)
@@ -431,68 +436,31 @@ def calc_new_mieff(wave_in, nn, kk, radius, rup, fort_calc_mie=False):
             corereal = 1.0
             coreimag = 0.0
             ## averaging over 6 radial bins to avoid fluctuations
-            if fort_calc_mie:
-                wave = wave_in * 1e-4  ## converting to cm
-                bad_mie = False
-                for isub in range(sub_radii):
-                    wvno = 2 * np.pi / wave[iwave]
-                    qe_pass, qs_pass, c_qs_pass, istatus = fort_mie_calc(
-                        rr,
-                        nn[iwave],
-                        kk[iwave],
-                        thetd,
-                        n_thetd,
-                        corerad,
-                        corereal,
-                        coreimag,
-                        wvno,
-                    )
-                    if istatus == 0:
-                        qe = qe_pass
-                        qs = qs_pass
-                        c_qs = c_qs_pass
-                    else:
-                        if bad_mie == False:
-                            bad_mie = True
-                            print(
-                                "do_optics(): no Mie solution. So previous grid value assigned"
-                            )
-                            ## The mie_calc routine fails to converge if the real refractive index is smaller than 1. This is true the
-                            ## fortran counterpart as well. So previous step values are assigned
-
-                    qext[iwave, irad] += qe
-                    qscat[iwave, irad] += qs
-                    cos_qscat[iwave, irad] += c_qs
-                    rr += dr5
             # this is the default.
             # if no fortran crappy code, use PyMieScatt which does a much faster
             # more robust computation of the Mie parameters
-            else:
-                wave = wave_in * 1e3  ## converting to nm
-                ## averaging over 6 radial bins to avoid fluctuations
-                for isub in range(sub_radii):
-                    # arr = qext, qsca, qabs, g, qpr, qback, qratio
-                    arr = ps.MieQCoreShell(
-                        corereal + (1j) * coreimag,
-                        nn[iwave] + (1j) * kk[iwave],
-                        wave[iwave],
-                        dCore=0,
-                        dShell=2.0 * rr * 1e7,
-                    )
+            wave = wave_in * 1e3  ## converting to nm
+            ## averaging over 6 radial bins to avoid fluctuations
+            for isub in range(sub_radii):
+                # arr = qext, qsca, qabs, g, qpr, qback, qratio
+                arr = ps.MieQCoreShell(
+                    corereal + (1j) * coreimag,
+                    nn[iwave] + (1j) * kk[iwave],
+                    wave[iwave],
+                    dCore=0,
+                    dShell=2.0 * rr * 1e7,
+                )
 
-                    qext[iwave, irad] += arr[0]
-                    qscat[iwave, irad] += arr[1]
-                    cos_qscat[iwave, irad] += arr[3] * arr[1]
-                    rr += dr5
+                qext[iwave, irad] += arr[0]
+                qscat[iwave, irad] += arr[1]
+                cos_qscat[iwave, irad] += arr[3] * arr[1]
+                rr += dr5
 
             ## adding to master arrays
             qext[iwave, irad] = qext[iwave, irad] / sub_radii
             qscat[iwave, irad] = qscat[iwave, irad] / sub_radii
             cos_qscat[iwave, irad] = cos_qscat[iwave, irad] / sub_radii
-    print(f"{qext[0] = }")
-    print(f"{qext[0][0] = }")
-    # print(f"{iwave = }")
-    # print(f"{irad = }")
+            # @dusc: we do indeed calculate the cross-sections for every radius
 
     return qext, qscat, cos_qscat
 
