@@ -5,6 +5,7 @@
 *.json~
 **/*.png
 # Jupyter Notebooks
+docs/
 .ipynb_checkpoints
 notebooks/*.html
 

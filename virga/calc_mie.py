@@ -1,10 +1,22 @@
 import numpy as np
-
 pi = np.pi
 import PyMieScatt as ps
 import os
 import pandas as pd
 from jdi_utils import get_r_grid_w_max
+
+from yasfpy.particles import Particles
+from yasfpy.initial_field import InitialField
+from yasfpy.parameters import Parameters
+from yasfpy.solver import Solver
+from yasfpy.numerics import Numerics
+from yasfpy.simulation import Simulation
+from yasfpy.optics import Optics
+from particle_generator import ParticleGenerator
+from pathlib import Path
+from time import time
+import _pickle
+import bz2
 
 def calc_new_mieff(wave_in, nn, kk, radius, rup, fort_calc_mie=False):
     ## Calculates optics by reading refrind files
@@ -233,5 +245,145 @@ def get_mie(gas, directory):
 
     return qext, qscat, cos_qscat, nwave, radii, wave
 
-def get_mie_yasf(igas, directory):
+
+def calc_scattering(radii: list[float], gas_name: str, data_dir: Path):
+    # TODO: how would one integrate the selection of model?
+    # prob write another method that builds one based on calculated cloud properties?
+
+    nradii = len(radii)
+    wave_in, nn, kk = get_refrind(gas_name, data_dir)
+    nwave = len(wave_in)  # number of wavalength bin centres for calculation
+
+    qext = np.zeros((nwave, nradii))
+    qscat = np.zeros((nwave, nradii))
+    cos_qscat = np.zeros((nwave, nradii))
+
+    # prep yasf
+
+
+    particle_generator = ParticleGenerator()
+    refrind = complex(nn,kk)
+    for radius in range(len(radii)):
+        particle_csv = particle_generator.mie_sphere(radius=radius, refrind=refrind, directory=data_dir)
+        refractive_index_table = read_virga_refrinds()
+        particles, numerics, simulation, optics = prep_yasf(refractive_index_table,particle_csv, wavelength=wave_in)
+        run_yasf(particles, numerics, simulation, optics, gas_name, data_dir, wave_in)
+
+    return qext, qscat, cos_qscat
+
+def read_virga_refrinds():
+    path = "~/virga-data/Fe.refrind"
+    data = pd.read_csv(
+        path , delim_whitespace=True, header=0, names=["wavelength", "n", "k"]
+    )
+    print(data)
+
+    name = path.split("/")[-1]
+    material = name.split(".")[0]
+    print(material)
+    return [data, material]
+
+def prep_yasf(refractive_index_table: list, particle_csv: Path, wavelength: list[float]):
+
+    print('Starting...')
+
+    start = time()
+
+    spheres = pd.read_csv(particle_csv, header=None, names=['x', 'y', 'z', 'r', 'm_idx'])
+
+    medium_refractive_index = np.zeros_like(wavelength)
+    lmax = 12
+
+    # load scattering modules
+    spheres = spheres.to_numpy()
+    particles = Particles(spheres[:,0:3], spheres[:,3], spheres[:,4], refractive_index_table=refractive_index_table)
+
+    initial_field = InitialField(beam_width=0,
+                                focal_point=np.array((0,0,0)),
+                                polar_angle=0,
+                                azimuthal_angle=0,
+                                polarization='UNP')
+
+    parameters = Parameters(wavelength=wavelength,
+                            medium_refractive_index=medium_refractive_index,
+                            particles=particles,
+                            initial_field=initial_field)
+
+    solver = Solver(solver_type='lgmres',
+                    tolerance=5e-4,
+                    max_iter=1000,
+                    restart=500)
+
+    numerics = Numerics(lmax = lmax,
+                        #  sampling_points_number = [a // 3 for a in [360, 180]],
+                        sampling_points_number = [a // 3 for a in [180, 360]],
+                        polar_weight_func = lambda x: x**4,
+                        particle_distance_resolution = 1,
+                        gpu = True,
+                        solver = solver)
+
+    simulation = Simulation(parameters, numerics)
+
+    optics = Optics(simulation)
+    return particles, numerics, simulation, optics
+
+def run_yasf(particles: Particles, numerics: Numerics, simulation: Simulation, optics: Optics, igas: str, directory: Path, wavelength: list[float]):
+    particles.compute_volume_equivalent_area()
+    numerics.compute_spherical_unity_vectors()
+    numerics.compute_translation_table()
+    simulation.compute_mie_coefficients()
+    simulation.compute_initial_field_coefficients()
+    simulation.compute_right_hand_side()
+    simulation.compute_scattered_field_coefficients()
+    optics.compute_cross_sections()
+    optics.compute_phase_funcition()
+
+
+    plot_data = dict(
+    wavelength = dict(
+        value = wavelength,
+        data = dict(
+        extinction_cross_section = optics.c_ext,
+        scattering_cross_section = optics.c_sca,
+        single_scattering_albedo = optics.albedo
+        )
+    ),
+    field = dict(
+        sampling_points = optics.simulation.sampling_points,
+        scattered_field = optics.simulation.scattered_field
+    ),
+    angle = dict(
+        value = optics.scattering_angles,
+        data = dict(
+        polar_angles = optics.simulation.numerics.polar_angles,
+        azimuthal_angles = optics.simulation.numerics.azimuthal_angles,
+        phase_function = dict(
+            normal = optics.phase_function,
+            spatial = optics.phase_function_3d
+        ),
+        degree_of_linear_polarization = dict(
+            normal = optics.degree_of_linear_polarization,
+            spatial = optics.degree_of_linear_polarization_3d
+        ),
+        degree_of_linear_polarization_q = dict(
+            normal = optics.degree_of_linear_polarization_q,
+            spatial = optics.degree_of_linear_polarization_q_3d
+        ),
+        degree_of_linear_polarization_u = dict(
+            normal = optics.degree_of_linear_polarization_u,
+            spatial = optics.degree_of_linear_polarization_u_3d
+        ),
+        degree_of_circular_polarization = dict(
+            normal = optics.degree_of_circular_polarization,
+            spatial = optics.degree_of_circular_polarization_3d
+        )
+        )
+    )
+    )
+    file_name = f"results_{igas}.pbz2"
+    with bz2.BZ2File(directory / file_name, 'w') as f:
+        _pickle.dump(plot_data, f)
+
+def get_mie_yasf(igas, directory: Path):
+    # bruh
     pass
