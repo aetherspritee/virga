@@ -8,7 +8,7 @@ import pvaps
 import matplotlib.pyplot as plt
 from direct_mmr_solver import direct_solver
 from justplotit import find_nearest_1d
-from calc_mie import calc_scattering
+from calc_mie import calc_scattering, get_r_grid
 
 class Atmosphere:
     def __init__(
@@ -516,30 +516,6 @@ def compute_yasf(
     rmin, nradii = get_radii_tentatively(directory, condensibles[0])
     # TODO: alternative selection of radii
 
-    results["z_cld"] = None  # temporary fix
-    results["qc"], results["qt"], results["rg"], results["reff"], results["ndz"], results["qc_path"], results["pres_out"], results["temp_out"], results["z_out"], results["mixl"] = direct_solver(
-        atmo.t_layer,
-        atmo.p_layer,
-        condensibles,
-        gas_mw,
-        gas_mmr,
-        rho_p,
-        mmw,
-        atmo.g,
-        atmo.kz,
-        atmo.fsed,
-        mh,
-        atmo.sig,
-        rmin,
-        nradii,
-        atmo.d_molecule,
-        atmo.eps_k,
-        atmo.c_p_factor,
-        direct_tol,
-        refine_TP,
-        og_vfall,
-        analytical_rg,
-    )
 
     results["condensibles"] = condensibles
     for i, igas in zip(range(ngas), condensibles):
@@ -575,14 +551,40 @@ def compute_yasf(
             cos_qscat_gas,
         )
 
+    z_cld = None  # temporary fix
+    qc, qt, rg, reff, ndz, qc_path, pres_out, temp_out, z_out, mixl = direct_solver(
+        atmo.t_layer,
+        atmo.p_layer,
+        condensibles,
+        gas_mw,
+        gas_mmr,
+        rho_p,
+        mmw,
+        atmo.g,
+        atmo.kz,
+        atmo.fsed,
+        mh,
+        atmo.sig,
+        rmin,
+        nradii,
+        atmo.d_molecule,
+        atmo.eps_k,
+        atmo.c_p_factor,
+        direct_tol,
+        refine_TP,
+        og_vfall,
+        analytical_rg,
+    )
+
+
     print("Starting optical calculations")
-    results["opd"], results["w0"], results["g0"], results["opd_gas"] = calc_optics(
+    opd, w0, g0, opd_gas = calc_optics(
         nwave,
-        results["qc"],
-        results["qt"],
-        results["rg"],
-        results["reff"],
-        results["ndz"],
+        qc,
+        qt,
+        rg,
+        reff,
+        ndz,
         radius,
         dr,
         qext,
@@ -593,7 +595,38 @@ def compute_yasf(
         nradii,
         verbose=False,
     )
-    export_results(atmo, fsed_in, results)
+
+    if atmo.param == "exp":
+        fsed_out = fsed_in * np.exp((atmo.z - atmo.z_alpha) / atmo.b) + atmo.eps
+    else:
+        fsed_out = fsed_in
+    return create_dict(
+        qc,
+        qt,
+        rg,
+        reff,
+        ndz,
+        opd,
+        w0,
+        g0,
+        opd_gas,
+        wave_in,
+        pres_out,
+        temp_out,
+        condensibles,
+        mh,
+        mmw,
+        fsed_out,
+        atmo.sig,
+        nradii,
+        rmin,
+        z_out,
+        atmo.dz_layer,
+        mixl,
+        atmo.kz,
+        atmo.scale_h,
+        z_cld,
+    )
 
 def get_radii_tentatively(directory: str, gas: str):
     df = pd.read_csv(
@@ -913,12 +946,14 @@ def create_dict(
     scale_h,
     z_cld,
 ):
+    if len(wave.shape) < 2:
+        wave = wave[:,np.newaxis]
     return {
         "pressure": pressure / 1e6,
         "pressure_unit": "bar",
         "temperature": temperature,
         "temperature_unit": "kelvin",
-        "wave": wave[:, 0],
+        "wave_in": wave[:, 0],
         "wave_unit": "micron",
         "condensate_mmr": qc,
         "cond_plus_gas_mmr": qt,
@@ -932,6 +967,7 @@ def create_dict(
         "asymmetry": g0,
         "opd_by_gas": opd_gas,
         "condensibles": gas_names,
+        "mh": mh,
         # "scalar_inputs": {'mh':mh, 'mmw':mmw,'fsed':fsed, 'sig':sig,'nrad':nrad,'rmin':rmin},
         "scalar_inputs": {"mh": mh, "mmw": mmw, "sig": sig, "nrad": nrad, "rmin": rmin},
         "fsed": fsed,
