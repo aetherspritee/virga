@@ -7,9 +7,10 @@ import matplotlib.pyplot as plt
 import time
 from bokeh.plotting import show, figure
 from direct_mmr_solver import generate_altitude
+import jdi_utils
 
 #   locate data
-mieff_directory = "/Users/dusc/virga-data"
+mieff_directory = "/home/dsc/virga-data"
 fsed = 1
 b = 2
 eps = 10
@@ -69,7 +70,7 @@ else:
     a.gravity(gravity=grav, gravity_unit=u.Unit("m/(s**2)"))
 
     if generate:
-        df = jdi.hot_jupiter()
+        df = jid_utils.hot_jupiter()
         pres = np.array(df["pressure"])
         temp = np.array(df["temperature"])
         kz = np.array(df["kz"])
@@ -95,7 +96,7 @@ else:
 
     else:
         # Get preset pt profile for testing
-        a.ptk(df=jdi.hot_jupiter())
+        a.ptk(df=jdi_utils.hot_jupiter())
 
 #   verify original and new solvers give same mixing ratios
 labels = ["original", "new"]
@@ -105,7 +106,7 @@ output = []
 fig1, ax1 = plt.subplots()
 for i in range(2):
     print("Moin")
-    all_out = jdi.compute(a, as_dict=True, directory=mieff_directory)
+    all_out = jdi.compute_yasf(a, as_dict=True, directory=mieff_directory)
     output.append(all_out)
     pres = all_out["pressure"]
     qt = all_out["cond_plus_gas_mmr"][:, 0]
