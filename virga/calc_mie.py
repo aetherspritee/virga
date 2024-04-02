@@ -265,10 +265,13 @@ def calc_scattering(radii: list[float], gas_name: str, data_dir: Path):
     particle_generator = ParticleGenerator()
     refrind = np.array([complex(nn[i],kk[i]) for i in range(len(nn))])
     for r_idx in range(len(radii)):
-        particle_csv = particle_generator.mie_sphere(radius=radii[r_idx], refrind=refrind, directory=data_dir)
+        particle_csv = particle_generator.mie_sphere(radius=radii[r_idx], refrind_type_idx=0, directory=data_dir)
         refractive_index_table = read_virga_refrinds()
+        refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
         particles, numerics, simulation, optics = prep_yasf(refractive_index_table,particle_csv, wavelength=wave_in)
         q_ext, q_scat, g = run_yasf(particles, numerics, simulation, optics, gas_name, data_dir, wave_in)
+        print(qext[:,r_idx].shape)
+        print(q_ext.shape)
         qext[:,r_idx] = q_ext
         qscat[:,r_idx] = q_scat
         cos_qscat[:,r_idx] = g*q_scat
@@ -293,7 +296,7 @@ def prep_yasf(refractive_index_table: list, particle_csv: Path, wavelength: list
 
     spheres = pd.read_csv(particle_csv, header=None, names=['x', 'y', 'z', 'r', 'm_idx'])
 
-    medium_refractive_index = np.zeros_like(wavelength)
+    medium_refractive_index = np.ones_like(wavelength)
     lmax = 12
 
     # load scattering modules
@@ -338,11 +341,12 @@ def run_yasf(particles: Particles, numerics: Numerics, simulation: Simulation, o
     simulation.compute_right_hand_side()
     simulation.compute_scattered_field_coefficients()
     optics.compute_cross_sections()
-    optics.compute_phase_funcition()
+    optics.compute_phase_function_batched()
+    optics.compute_asymmetry()
 
 
-    q_ext = optics.c_ext/particles.geometric_projection,
-    q_sca = optics.c_sca/particles.geometric_projection,
+    q_ext = optics.c_ext/particles.geometric_projection
+    q_sca = optics.c_sca/particles.geometric_projection
     g = optics.g
 
     return q_ext, q_sca, g
