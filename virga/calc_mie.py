@@ -249,6 +249,7 @@ def get_mie(gas, directory):
 def calc_scattering(radii: list[float], gas_name: str, data_dir: Path):
     # TODO: how would one integrate the selection of model?
     # prob write another method that builds one based on calculated cloud properties?
+    print(f"{radii = }")
 
     nradii = len(radii)
     wave_in, nn, kk = get_refrind(gas_name, data_dir)
@@ -262,7 +263,7 @@ def calc_scattering(radii: list[float], gas_name: str, data_dir: Path):
 
 
     particle_generator = ParticleGenerator()
-    refrind = complex(nn,kk)
+    refrind = np.array([complex(nn[i],kk[i]) for i in range(len(nn))])
     for r_idx in range(len(radii)):
         particle_csv = particle_generator.mie_sphere(radius=radii[r_idx], refrind=refrind, directory=data_dir)
         refractive_index_table = read_virga_refrinds()
