@@ -9,9 +9,9 @@ class ParticleGenerator():
 
     def mie_sphere(self,radius: float, refrind: complex, directory: Path) -> Path:
         file_name = f"mie_sphere_{radius}_nm.csv"
-        with open(directory / file_name, "a"):
+        with open(Path(directory) / Path(file_name), "a"):
             pass
-        with open(directory / file_name, "w") as f:
+        with open(Path(directory) / Path(file_name), "w") as f:
             writer = csv.writer(f)
             writer.writerow([0.0,0.0,0.0,radius,refrind])
-        return directory / file_name
+        return Path(directory) / Path(file_name)
