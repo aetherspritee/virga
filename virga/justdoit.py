@@ -85,8 +85,9 @@ def compute_yasf(
         # qext_test, qscat_test, g_qscat_test, radius_test, wave_in_test = calc_mie_db(
         #     [igas], directory, directory, rmin=1e-5, nradii=10
         # )
-
-        qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = get_mie_yasf(igas, directory)
+        # determine which radii to use, might wanna move this somewhere else
+        radii = []
+        qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(radii, igas, directory)
 
         if i == 0:
             nradii = len(radius)

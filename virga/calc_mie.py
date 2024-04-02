@@ -263,13 +263,16 @@ def calc_scattering(radii: list[float], gas_name: str, data_dir: Path):
 
     particle_generator = ParticleGenerator()
     refrind = complex(nn,kk)
-    for radius in range(len(radii)):
-        particle_csv = particle_generator.mie_sphere(radius=radius, refrind=refrind, directory=data_dir)
+    for r_idx in range(len(radii)):
+        particle_csv = particle_generator.mie_sphere(radius=radii[r_idx], refrind=refrind, directory=data_dir)
         refractive_index_table = read_virga_refrinds()
         particles, numerics, simulation, optics = prep_yasf(refractive_index_table,particle_csv, wavelength=wave_in)
-        run_yasf(particles, numerics, simulation, optics, gas_name, data_dir, wave_in)
+        q_ext, q_scat, g = run_yasf(particles, numerics, simulation, optics, gas_name, data_dir, wave_in)
+        qext[:,r_idx] = q_ext
+        qscat[:,r_idx] = q_scat
+        cos_qscat[:,r_idx] = g*q_scat
 
-    return qext, qscat, cos_qscat
+    return qext, qscat, cos_qscat, nwave, radii ,wave_in
 
 def read_virga_refrinds():
     path = "~/virga-data/Fe.refrind"
@@ -283,11 +286,9 @@ def read_virga_refrinds():
     print(material)
     return [data, material]
 
+# TODO: might wanna build classes for that in yasf, so that this isnt necessary and one gets
+#       more options for parameters to set
 def prep_yasf(refractive_index_table: list, particle_csv: Path, wavelength: list[float]):
-
-    print('Starting...')
-
-    start = time()
 
     spheres = pd.read_csv(particle_csv, header=None, names=['x', 'y', 'z', 'r', 'm_idx'])
 
@@ -327,7 +328,7 @@ def prep_yasf(refractive_index_table: list, particle_csv: Path, wavelength: list
     optics = Optics(simulation)
     return particles, numerics, simulation, optics
 
-def run_yasf(particles: Particles, numerics: Numerics, simulation: Simulation, optics: Optics, igas: str, directory: Path, wavelength: list[float]):
+def run_yasf(particles: Particles, numerics: Numerics, simulation: Simulation, optics: Optics, igas: str, directory: Path, wavelength: list[float]) -> tuple[np.ndarray,np.ndarray, np.ndarray]:
     particles.compute_volume_equivalent_area()
     numerics.compute_spherical_unity_vectors()
     numerics.compute_translation_table()
@@ -339,50 +340,11 @@ def run_yasf(particles: Particles, numerics: Numerics, simulation: Simulation, o
     optics.compute_phase_funcition()
 
 
-    plot_data = dict(
-    wavelength = dict(
-        value = wavelength,
-        data = dict(
-        extinction_cross_section = optics.c_ext,
-        scattering_cross_section = optics.c_sca,
-        single_scattering_albedo = optics.albedo
-        )
-    ),
-    field = dict(
-        sampling_points = optics.simulation.sampling_points,
-        scattered_field = optics.simulation.scattered_field
-    ),
-    angle = dict(
-        value = optics.scattering_angles,
-        data = dict(
-        polar_angles = optics.simulation.numerics.polar_angles,
-        azimuthal_angles = optics.simulation.numerics.azimuthal_angles,
-        phase_function = dict(
-            normal = optics.phase_function,
-            spatial = optics.phase_function_3d
-        ),
-        degree_of_linear_polarization = dict(
-            normal = optics.degree_of_linear_polarization,
-            spatial = optics.degree_of_linear_polarization_3d
-        ),
-        degree_of_linear_polarization_q = dict(
-            normal = optics.degree_of_linear_polarization_q,
-            spatial = optics.degree_of_linear_polarization_q_3d
-        ),
-        degree_of_linear_polarization_u = dict(
-            normal = optics.degree_of_linear_polarization_u,
-            spatial = optics.degree_of_linear_polarization_u_3d
-        ),
-        degree_of_circular_polarization = dict(
-            normal = optics.degree_of_circular_polarization,
-            spatial = optics.degree_of_circular_polarization_3d
-        )
-        )
-    )
-    )
-    file_name = f"results_{igas}.pbz2"
-    with bz2.BZ2File(directory / file_name, 'w') as f:
-        _pickle.dump(plot_data, f)
+    q_ext = optics.c_ext/particles.geometric_projection,
+    q_sca = optics.c_sca/particles.geometric_projection,
+    g = optics.g
+
+    return q_ext, q_sca, g
 
 def get_mie_yasf(igas, directory: Path):
     # bruh
