@@ -483,6 +483,7 @@ def compute_yasf(
     refine_TP=True,
     og_vfall=True,
     analytical_rg=True,
+    radii: list = [0.1,0.12],
 ):
     """
     Just like `compute`, but using YASF for numerical light scattering of fractal particles.
@@ -527,7 +528,6 @@ def compute_yasf(
         #     [igas], directory, directory, rmin=1e-5, nradii=10
         # )
         # determine which radii to use, might wanna move this somewhere else
-        radii = [0.1,0.12]
         qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(radii, igas, directory)
 
         print(f"{qext_gas = }")
