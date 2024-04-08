@@ -65,7 +65,7 @@ else:
 fig1, ax1 = plt.subplots()
 
 radii = [0.1]
-radius = [1.00000000e-05, 2.59970240e-05, 6.75845259e-05, 1.75699655e-04, 4.56766814e-04, 1.18745779e-03, 3.08703686e-03, 8.02537715e-03, 2.08635923e-02, 5.42391310e-02]
+radius = [1.00000000e-05]
 
 all_out_og = jdi.compute(a, as_dict=True, directory=mieff_directory)
 all_out_yasf = jdi.compute_yasf(a, as_dict=True, directory=mieff_directory, radii=radius)

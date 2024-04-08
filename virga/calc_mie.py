@@ -79,7 +79,6 @@ def calc_new_mieff(wave_in, nn, kk, radius, rup, fort_calc_mie=False):
             qext[iwave, irad] = qext[iwave, irad] / sub_radii
             qscat[iwave, irad] = qscat[iwave, irad] / sub_radii
             cos_qscat[iwave, irad] = cos_qscat[iwave, irad] / sub_radii
-            # @dusc: we do indeed calculate the cross-sections for every radius
 
     return qext, qscat, cos_qscat
 
@@ -249,10 +248,11 @@ def get_mie(gas, directory):
 def calc_scattering(radii: list[float], gas_name: str, data_dir: Path):
     # TODO: how would one integrate the selection of model?
     # prob write another method that builds one based on calculated cloud properties?
-    print(f"{radii = }")
+    # print(f"{radii = }")
 
     nradii = len(radii)
     wave_in, nn, kk = get_refrind(gas_name, data_dir)
+    print(f"{wave_in = }")
     nwave = len(wave_in)  # number of wavalength bin centres for calculation
 
     qext = np.zeros((nwave, nradii))
@@ -270,8 +270,8 @@ def calc_scattering(radii: list[float], gas_name: str, data_dir: Path):
         refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
         particles, numerics, simulation, optics = prep_yasf(refractive_index_table,particle_csv, wavelength=wave_in)
         q_ext, q_scat, g = run_yasf(particles, numerics, simulation, optics, gas_name, data_dir, wave_in)
-        print(qext[:,r_idx].shape)
-        print(q_ext.shape)
+        # print(qext[:,r_idx].shape)
+        # print(q_ext.shape)
         qext[:,r_idx] = q_ext
         qscat[:,r_idx] = q_scat
         cos_qscat[:,r_idx] = g*q_scat

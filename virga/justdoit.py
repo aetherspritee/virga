@@ -516,6 +516,8 @@ def compute_yasf(
 
     assert directory != None , "Need a directory for now"
     rmin, nradii = get_radii_tentatively(directory, condensibles[0])
+    print("PRE:")
+    print(rmin, nradii)
     # TODO: alternative selection of radii
 
 
@@ -545,6 +547,9 @@ def compute_yasf(
             qscat = np.zeros((nwave, nradii, ngas))
             cos_qscat = np.zeros((nwave, nradii, ngas))
 
+        print("POST:")
+        print(rmin, nradii)
+        print(radius)
         # add to master matrix that contains the per gas Mie stuff
         qext[:, :, i], qscat[:, :, i], cos_qscat[:, :, i] = (
             qext_gas,
@@ -747,7 +752,6 @@ def compute(
     print(ngas)
     print(condensibles)
     for i, igas in zip(range(ngas), condensibles):
-        print("im here lmao")
         # Get gas properties including gas mean molecular weight,
         # gas mixing ratio, and the density
         run_gas = getattr(gas_properties, igas)
@@ -764,7 +768,8 @@ def compute(
         qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = get_mie(
             igas, directory
         )
-
+        print("PRE:")
+        print(radius)
         if i == 0:
             nradii = len(radius)
             rmin = np.min(radius)
@@ -773,6 +778,8 @@ def compute(
             qscat = np.zeros((nwave, nradii, ngas))
             cos_qscat = np.zeros((nwave, nradii, ngas))
 
+        print("POST:")
+        print(radius)
         # add to master matrix that contains the per gas Mie stuff
         qext[:, :, i], qscat[:, :, i], cos_qscat[:, :, i] = (
             qext_gas,

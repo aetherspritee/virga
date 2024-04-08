@@ -106,7 +106,7 @@ output = []
 fig1, ax1 = plt.subplots()
 for i in range(2):
     print("Moin")
-    all_out = jdi.compute_yasf(a, as_dict=True, directory=mieff_directory)
+    all_out = jdi.compute(a, as_dict=True, directory=mieff_directory)
     output.append(all_out)
     pres = all_out["pressure"]
     qt = all_out["cond_plus_gas_mmr"][:, 0]
