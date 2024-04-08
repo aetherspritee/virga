@@ -8,7 +8,8 @@ import pvaps
 import matplotlib.pyplot as plt
 from direct_mmr_solver import direct_solver
 from justplotit import find_nearest_1d
-from calc_mie import calc_scattering, get_r_grid
+from calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie
+from layer import layer
 
 class Atmosphere:
     def __init__(
