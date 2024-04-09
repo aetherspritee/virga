@@ -154,6 +154,10 @@ def direct_solver(
         )
 
         # generate qc values for original pressure data
+        print("ABOUT TO CALC RADII STUFFS")
+        print(f"{pres = }")
+        print(f"{rg = }")
+        print(f"{reff = }")
         qc_out[:, i] = interp1d(pres, qc)(pres_out)
         qt_out[:, i] = interp1d(pres, qt)(pres_out)
         rg_out[:, i] = interp1d(pres, rg)(pres_out)

@@ -794,6 +794,8 @@ def compute(
     # reff = droplet eff radius, ndz = column dens of condensate,
     # qc_path = vertical path of condensate
 
+    print(f"{qext_gas = }")
+    print(f"{qscat_gas = }")
     #   run original eddysed code
     if og_solver:
         # here atmo.param describes the parameterization used for the variable fsed methodology

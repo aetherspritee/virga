@@ -18,6 +18,40 @@ from time import time
 import _pickle
 import bz2
 
+def calc_mieff(wave_in, nn,kk, radius, rup, fort_calc_mie=False):
+    nradii = len(radius)
+    nwave = len(wave_in)  # number of wavalength bin centres for calculation
+
+    qext = np.zeros((nwave, nradii))
+    qscat = np.zeros((nwave, nradii))
+    cos_qscat = np.zeros((nwave, nradii))
+
+    for iwave in range(nwave):
+        for irad in range(nradii):
+
+            corerad = 0.0
+            corereal = 1.0
+            coreimag = 0.0
+
+            wave = wave_in * 1e3  ## converting to nm
+            ## averaging over 6 radial bins to avoid fluctuations
+                # arr = qext, qsca, qabs, g, qpr, qback, qratio
+            arr = ps.MieQCoreShell(
+                corereal + (1j) * coreimag,
+                nn[iwave] + (1j) * kk[iwave],
+                wave[iwave],
+                dCore=0,
+                dShell=2.0 * radius[irad] * 1e7,
+            )
+
+            qext[iwave, irad] = arr[0]
+            qscat[iwave, irad] = arr[1]
+            cos_qscat[iwave, irad] = arr[3] * arr[1]
+
+    return qext, qscat, cos_qscat
+
+
+
 def calc_new_mieff(wave_in, nn, kk, radius, rup, fort_calc_mie=False):
     ## Calculates optics by reading refrind files
     thetd = 0.0  # incident wave angle
@@ -171,10 +205,16 @@ def calc_mie_db(gas_name, dir_refrind, dir_out, rmin=1e-8, nradii=60):
             # all these files need to be on the same grid
             print(f"{nradii = }")
             print(f"{rmin = }")
-            radius, rup, dr = get_r_grid_w_max(r_min=rmin, n_radii=nradii)
+            print("default")
+            radius, rup, dr = get_r_grid(r_min=rmin, n_radii=nradii)
             print(f"{radius = }")
             print(f"{rup = }")
             print(f"{dr = }")
+            # print("w_max")
+            # radius, rup, dr = get_r_grid_w_max(r_min=rmin, n_radii=nradii)
+            # print(f"{radius = }")
+            # print(f"{rup = }")
+            # print(f"{dr = }")
 
             qext_all = np.zeros(shape=(nwave, nradii, ngas))
             qscat_all = np.zeros(shape=(nwave, nradii, ngas))
@@ -182,7 +222,7 @@ def calc_mie_db(gas_name, dir_refrind, dir_out, rmin=1e-8, nradii=60):
 
         # get extinction, scattering, and asymmetry
         # all of these are  [nwave by nradii]
-        qext_gas, qscat_gas, cos_qscat_gas = calc_new_mieff(
+        qext_gas, qscat_gas, cos_qscat_gas = calc_mieff(
             wave_in, nn, kk, radius, rup, fort_calc_mie=False
         )
 
@@ -283,11 +323,11 @@ def read_virga_refrinds():
     data = pd.read_csv(
         path , delim_whitespace=True, header=0, names=["wavelength", "n", "k"]
     )
-    print(data)
+    # print(data)
 
     name = path.split("/")[-1]
     material = name.split(".")[0]
-    print(material)
+    # print(material)
     return [data, material]
 
 # TODO: might wanna build classes for that in yasf, so that this isnt necessary and one gets

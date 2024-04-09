@@ -288,8 +288,12 @@ def layer(
     # Get layer averages
 
     if opd_layer > 0.0:
+        print(f"{qc_layer = }")
+        print(f"{rho_p = }")
+        print(f"{opd_layer = }")
         reff_layer = 1.5 * qc_layer / (rho_p * opd_layer)
         lnsig2 = 0.5 * np.log(sig) ** 2
+        print(f"{lnsig2 = }")
         rg_layer = reff_layer * np.exp(-5 * lnsig2)
     else:
         reff_layer = 0.0
