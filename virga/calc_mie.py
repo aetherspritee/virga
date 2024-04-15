@@ -131,10 +131,15 @@ def get_refrind(igas, directory):
         Directory were reference files are located.
     """
     filename = os.path.join(directory, igas + ".refrind")
-    idummy, wave_in, nn, kk = np.loadtxt(
-        open(filename, "rt").readlines(), unpack=True, usecols=[0, 1, 2, 3]
-    )  # [:-1]
-    return wave_in, nn, kk
+    try:
+        _, wave_in, nn, kk = np.loadtxt(open(filename,'rt').readlines(), unpack=True, usecols=[0,1,2,3])#[:-1]
+        return wave_in,nn,kk
+    except:
+        df = pd.read_csv(filename)
+        wave_in = df['micron'].values
+        nn = df['real'].values
+        kk = df['imaginary'].values
+        return wave_in,nn,kk
 
 
 def get_r_grid(r_min=1e-5, n_radii=40):
@@ -159,7 +164,7 @@ def get_r_grid(r_min=1e-5, n_radii=40):
     return radius, rup, dr
 
 
-def calc_mie_db(gas_name, dir_refrind, dir_out, rmin=1e-8, nradii=60):
+def calc_mie_db(gas_name, dir_refrind, dir_out, rmin=1e-8, rmax = 5.4239131e-2, nradii = 60, fort_calc_mie = False):
     """
     Function that calculations new Mie database using PyMieScatt.
 
@@ -206,7 +211,7 @@ def calc_mie_db(gas_name, dir_refrind, dir_out, rmin=1e-8, nradii=60):
             print(f"{nradii = }")
             print(f"{rmin = }")
             print("default")
-            radius, rup, dr = get_r_grid(r_min=rmin, n_radii=nradii)
+            radius, rup, dr = get_r_grid_w_max(r_min=rmin, r_max=rmax, n_radii=nradii)
             print(f"{radius = }")
             print(f"{rup = }")
             print(f"{dr = }")
@@ -223,7 +228,7 @@ def calc_mie_db(gas_name, dir_refrind, dir_out, rmin=1e-8, nradii=60):
         # get extinction, scattering, and asymmetry
         # all of these are  [nwave by nradii]
         qext_gas, qscat_gas, cos_qscat_gas = calc_mieff(
-            wave_in, nn, kk, radius, rup, fort_calc_mie=False
+            wave_in, nn, kk, radius, rup, fort_calc_mie=fort_calc_mie
         )
 
         # add to master matrix that contains the per gas Mie stuff
@@ -240,7 +245,7 @@ def calc_mie_db(gas_name, dir_refrind, dir_out, rmin=1e-8, nradii=60):
         cos_qscat = [np.nan] + sum(
             [[np.nan] + list(icos) for icos in cos_qscat_gas.T], []
         )
-
+        print(os.path.join(dir_out,gas_name[i]+".mieff"))
         pd.DataFrame(
             {"wave": wave, "qscat": qscat, "qext": qext, "cos_qscat": cos_qscat}
         ).to_csv(
@@ -259,7 +264,7 @@ def get_mie(gas, directory):
     df = pd.read_csv(
         os.path.join(directory, gas + ".mieff"),
         names=["wave", "qscat", "qext", "cos_qscat"],
-        delim_whitespace=True,
+        sep='\+s',
     )
 
     nwave = int(df.iloc[0, 0])
@@ -276,6 +281,21 @@ def get_mie(gas, directory):
     assert (
         nwave * nradii == df.shape[0]
     ), "Number of wavelength specified in header is not the same as number of waves in file"
+
+    # check if incoming wavegrid is in correct order
+    sub_array = df['wave'].values[:196]  # Extract the first 196 values
+    is_ascending = np.all(np.diff(sub_array) >= 0) # check if going from short to long wavelength
+
+    if is_ascending == False:
+        flipped_wave = np.flip(df['wave'].values.reshape(nradii, -1, nwave), axis=2).flatten()
+        flipped_qscat = np.flip(df['qscat'].values.reshape(nradii, -1, nwave), axis=2).flatten()
+        flipped_qext = np.flip(df['qext'].values.reshape(nradii, -1, nwave), axis=2).flatten()
+        flipped_cos_qscat = np.flip(df['cos_qscat'].values.reshape(nradii, -1, nwave), axis=2).flatten()
+
+        df['wave'] = flipped_wave
+        df['qscat'] = flipped_qscat
+        df['qext'] = flipped_qext
+        df['cos_qscat'] = flipped_cos_qscat
 
     wave = df["wave"].values.reshape((nradii, nwave)).T
     qscat = df["qscat"].values.reshape((nradii, nwave)).T

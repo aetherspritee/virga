@@ -71,8 +71,10 @@ def recommend_gas(
         from bokeh.palettes import magma
 
         plot_kwargs["y_range"] = plot_kwargs.get("y_range", [1e2, 1e-3])
-        plot_kwargs["height"] = plot_kwargs.get("height", 400)
-        plot_kwargs["width"] = plot_kwargs.get("width", 600)
+        plot_kwargs['height'] = plot_kwargs.get('plot_height',plot_kwargs.get('height',400))
+        plot_kwargs['width'] = plot_kwargs.get('plot_width', plot_kwargs.get('width',600))
+        if 'plot_width' in plot_kwargs.keys() : plot_kwargs.pop('plot_width')
+        if 'plot_height' in plot_kwargs.keys() : plot_kwargs.pop('plot_height')
         plot_kwargs["x_axis_label"] = plot_kwargs.get("x_axis_label", "Temperature (K)")
         plot_kwargs["y_axis_label"] = plot_kwargs.get("y_axis_label", "Pressure (bars)")
         plot_kwargs["y_axis_type"] = plot_kwargs.get("y_axis_type", "log")
@@ -144,7 +146,7 @@ def recommend_gas(
             return recommend
 
 
-def condensation_t(gas_name, mh, mmw, pressure=np.logspace(-6, 2, 20)):
+def condensation_t(gas_name, mh, mmw, pressure =  np.logspace(-6, 2, 20), gas_mmr=None):
     """
     Find condensation curve for any planet given a pressure. These are computed
     based on pressure vapor curves defined in pvaps.py.
@@ -177,7 +179,7 @@ def condensation_t(gas_name, mh, mmw, pressure=np.logspace(-6, 2, 20)):
             find_cond_t,
             bracket=[10, 10000],
             method="brentq",
-            args=(p, mh, mmw, gas_name),
+            args=(p, mh, mmw, gas_name, gas_mmr)
         )
         temps += [temp.root]
     return np.array(pressure), np.array(temps)
@@ -188,7 +190,7 @@ def hot_jupiter():
 
     df = pd.read_csv(
         directory,
-        delim_whitespace=True,
+        sep='\s+',
         usecols=[1, 2, 3],
         names=["pressure", "temperature", "kz"],
         skiprows=1,
@@ -215,18 +217,61 @@ def brown_dwarf():
     return df
 
 
-def picaso_format(opd, w0, g0):
+def warm_neptune():
+    directory = os.path.join(os.path.dirname(__file__), "reference",
+                                   "wn.pt")
+def temperate_neptune():
+    directory = os.path.join(os.path.dirname(__file__), "reference",
+                                   "temperate_neptune.pt")
+
+    df  = pd.read_csv(directory,skiprows=0,sep='\s+',
+                 header=None,
+                 names=['pressure','temperature','kz'])
+    return df
+
+
+
+def picaso_format(opd, w0, g0, pressure=None, wavenumber=None ):
+    """
+    Gets virga output to picaso format
+    Parameters
+    ----------
+    opd : ndarray
+        array from virga of extinction optical depths per layer
+    w0 : ndarray
+        array from virga of single scattering albedo
+    g0 : ndarray
+        array from virga of asymmetry
+    pressure : array
+        pressure array in bars
+    wavenumber: array
+        wavenumber arry in cm^(-1)
+    """
     df = pd.DataFrame(
-        index=[i for i in range(opd.shape[0] * opd.shape[1])],
-        columns=["lvl", "w", "opd", "w0", "g0"],
-    )
+                dict(opd = opd.flatten(),
+                     w0 = w0.flatten(),
+                     g0 = g0.flatten()))
+
+    if not isinstance(pressure,type(None)):
+        df['pressure'] = np.concatenate([[i]*len(wavenumber) for i in pressure])
+    if  not isinstance(wavenumber,type(None)):
+        df['wavenumber'] = np.concatenate([wavenumber]*len(pressure))
+    return df
+
+def picaso_format_custom_wavenumber_grid(opd, w0, g0, wavenumber_grid ):
+    """
+    This is currently redundant with picaso_format now that picaso_format
+    reads in wavenumber grid.
+    Keeping for now, but will discontinue soon.
+    """
+    df = pd.DataFrame(index=[ i for i in range(opd.shape[0]*opd.shape[1])], columns=['pressure','wavenumber','opd','w0','g0'])
     i = 0
     LVL = []
     WV, OPD, WW0, GG0 = [], [], [], []
     for j in range(opd.shape[0]):
         for w in range(opd.shape[1]):
             LVL += [j + 1]
-            WV += [w + 1]
+            WV += [wavenumber_grid[w]]
             OPD += [opd[j, w]]
             WW0 += [w0[j, w]]
             GG0 += [g0[j, w]]
@@ -235,6 +280,78 @@ def picaso_format(opd, w0, g0):
     df.iloc[:, 2] = OPD
     df.iloc[:, 3] = WW0
     df.iloc[:, 4] = GG0
+    return df
+
+def picaso_format_slab(p_bottom,  opd, w0, g0,
+    wavenumber_grid, pressure_grid ,p_top=None,p_decay=None):
+    """
+    Sets up a PICASO-readable dataframe that inserts a wavelength dependent aerosol layer at the user's
+    given pressure bounds, i.e., a wavelength-dependent slab of clouds or haze.
+
+    Parameters
+    ----------
+    p_bottom : float
+        the cloud/haze base pressure
+        the upper bound of pressure (i.e., lower altitude bound) to set the aerosol layer. (Bars)
+    opd : ndarray
+        wavelength-dependent optical depth of the aerosol
+    w0 : ndarray
+        wavelength-dependent single scattering albedo of the aerosol
+    g0 : ndarray
+        asymmetry parameter = Q_scat wtd avg of <cos theta>
+    wavenumber_grid : ndarray
+        wavenumber grid in (cm^-1)
+    pressure_grid : ndarray
+        bars, user-defined pressure grid for the model atmosphere
+    p_top : float
+         bars, the cloud/haze-top pressure
+         This cuts off the upper cloud region as a step function.
+         You must specify either p_top or p_decay.
+    p_decay : ndarray
+        noramlized to 1, unitless
+        array the same size as pressure_grid which specifies a
+        height dependent optical depth. The usual format of p_decay is
+        a fsed like exponential decay ~np.exp(-fsed*z/H)
+    Returns
+    -------
+    Dataframe of aerosol layer with pressure (in levels - non-physical units!), wavenumber, opd, w0, and g0 to be read by PICASO
+    """
+    if (isinstance(p_top, type(None)) & isinstance(p_decay, type(None))):
+        raise Exception("Must specify cloud top pressure via p_top, or the vertical pressure decay via p_decay")
+    elif (isinstance(p_top, type(None)) & (~isinstance(p_decay, type(None)))):
+        p_top = 1e-10#arbitarily small pressure to make sure float comparison doest break
+
+
+    df = pd.DataFrame(index=[ i for i in range(pressure_grid.shape[0]*opd.shape[0])], columns=['pressure','wavenumber','opd','w0','g0'])
+    i = 0
+    LVL = []
+    WV,OPD,WW0,GG0 =[],[],[],[]
+
+    # this loops the opd, w0, and g0 between p and dp bounds and put zeroes for them everywhere else
+    for j in range(pressure_grid.shape[0]):
+           for w in range(opd.shape[0]):
+                #stick in pressure bounds for the aerosol layer:
+                if p_top <= pressure_grid[j] <= p_bottom:
+                    LVL+=[j+1]
+                    WV+=[wavenumber_grid[w]]
+                    if isinstance(p_decay,type(None)):
+                        OPD+=[opd[w]]
+                    else:
+                        OPD+=[p_decay[j]/np.max(p_decay)*opd[w]]
+                    WW0+=[w0[w]]
+                    GG0+=[g0[w]]
+                else:
+                    LVL+=[j+1]
+                    WV+=[wavenumber_grid[w]]
+                    OPD+=[opd[w]*0]
+                    WW0+=[w0[w]*0]
+                    GG0+=[g0[w]*0]
+
+    df.iloc[:,0 ] = LVL
+    df.iloc[:,1 ] = WV
+    df.iloc[:,2 ] = OPD
+    df.iloc[:,3 ] = WW0
+    df.iloc[:,4 ] = GG0
     return df
 
 

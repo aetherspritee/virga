@@ -6,6 +6,7 @@ from root_functions import qvs_below_model
 import gas_properties
 import pvaps
 import matplotlib.pyplot as plt
+from bokeh.io import output_notebook
 from direct_mmr_solver import direct_solver
 from justplotit import find_nearest_1d
 from calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie
@@ -63,6 +64,10 @@ class Atmosphere:
         self.constants()
         self.supsat = supsat
         self.gas_mmr = gas_mmr
+        if isinstance(gas_mmr, type(None)):
+            self.gas_mmr = {igas:None for igas in condensibles}
+        else:
+            self.gas_mmr = gas_mmr
 
     def constants(self):
         #   Depth of the Lennard-Jones potential well for the atmosphere
@@ -524,7 +529,7 @@ def compute_yasf(
     results["condensibles"] = condensibles
     for i, igas in zip(range(ngas), condensibles):
         run_gas = getattr(gas_properties, igas)
-        gas_mw[i], gas_mmr[i], rho_p[i] = run_gas(mmw, mh=mh, gas_mmr=atmo.gas_mmr)
+        gas_mw[i], gas_mmr[i], rho_p[i] = run_gas(mmw, mh=mh, gas_mmr=atmo.gas_mmr[igas])
 
         # TODO: currently only works with precalculated values
         # qext_test, qscat_test, g_qscat_test, radius_test, wave_in_test = calc_mie_db(
@@ -1008,7 +1013,7 @@ def calc_optics(
     sig,
     rmin,
     nrad,
-    verbose,
+    verbose=False,
 ):
     """
     Calculate spectrally-resolved profiles of optical depth, single-scattering
@@ -1092,20 +1097,22 @@ def calc_optics(
                 for irad in range(nrad):
                     rr = radius[irad]
                     arg1 = dr[irad] / (np.sqrt(2.0 * PI) * rr * np.log(rsig))
-                    arg2 = -np.log(rr / rg[iz, igas]) ** 2 / (2 * np.log(rsig) ** 2)
+                    arg2 = -np.log(rr / rg[iz, igas]) ** 2 / (2 * np.log(rsig) ** 2) # lognormal dist
                     norm = norm + arg1 * np.exp(arg2)
                     # print (rr, rg[iz,igas],rsig,arg1,arg2)
 
                 # normalization
                 norm = ndz[iz, igas] / norm
 
-                # TODO: @dusc: check ssa formulae to try and understand what this monstrosity is
+                # @dusc: this is some sort of integration over the individual layers using the particle distributions
+                # and number densities of particles
                 for irad in range(nrad):
                     rr = radius[irad]
-                    # @dusc: this refers to
                     arg1 = dr[irad] / (np.sqrt(2.0 * PI) * np.log(rsig))
+                    print(f"{arg1 = }")
                     arg2 = -np.log(rr / rg[iz, igas]) ** 2 / (2 * np.log(rsig) ** 2)
-                    pir2ndz = norm * PI * rr * arg1 * np.exp(arg2)
+                    print(f"{arg2 = }")
+                    pir2ndz = norm * PI * rr * arg1 * np.exp(arg2) # rr*pi* PDF, what is this?
                     for iwave in range(nwave):
                         scat_gas[iz, iwave, igas] = (
                             scat_gas[iz, iwave, igas]
@@ -1121,8 +1128,29 @@ def calc_optics(
 
                     # TO DO ADD IN CLOUD SUBLAYER KLUGE LATER
 
-    # Sum over gases and compute spectral optical depth profile etc
-    for iz in range(nz):
+    for igas in range(ngas):
+        for iz in range(nz-1,-1,-1):
+
+            if np.sum(ext_gas[iz,:,igas]) > 0:
+                ibot = iz
+                break
+            if iz == 0:
+                ibot=0
+        #print(igas,ibot)
+        if ibot >= nz -2:
+            print("Not doing sublayer as cloud deck at the bottom of pressure grid")
+
+        else:
+            opd_layer[ibot+1,igas] = opd_layer[ibot,igas]*0.1
+            scat_gas[ibot+1,:,igas] = scat_gas[ibot,:,igas]*0.1
+            ext_gas[ibot+1,:,igas] = ext_gas[ibot,:,igas]*0.1
+            cqs_gas[ibot+1,:,igas] = cqs_gas[ibot,:,igas]*0.1
+            opd_layer[ibot+2,igas] = opd_layer[ibot,igas]*0.05
+            scat_gas[ibot+2,:,igas] = scat_gas[ibot,:,igas]*0.05
+            ext_gas[ibot+2,:,igas] = ext_gas[ibot,:,igas]*0.05
+            cqs_gas[ibot+2,:,igas] = cqs_gas[ibot,:,igas]*0.05
+
+        # Sum over gases and compute spectral optical depth profile etc
         for iwave in range(nwave):
             opd_scat = 0.0
             opd_ext = 0.0
@@ -1295,7 +1323,7 @@ def eddysed(
             z_cld = None
             qvs_factor = (supsat + 1) * gas_mw[i] / mw_atmos
             get_pvap = getattr(pvaps, igas)
-            if igas == "Mg2SiO4":
+            if igas in ['Mg2SiO4','CaTiO3','CaAl12O19','FakeHaze','H2SO4','KhareHaze','SteamHaze300K','SteamHaze400K']:
                 pvap = get_pvap(t_bot, p_bot, mh=mh)
             else:
                 pvap = get_pvap(t_bot, mh=mh)
@@ -1453,3 +1481,93 @@ def eddysed(
     return qc, qt, rg, reff, ndz, qc_path, mixl, z_cld_out
 
 
+def calc_optics_user_r_dist(wave_in, ndz, radius, radius_unit, r_distribution, qext, qscat ,cos_qscat,  verbose=False):
+    """
+    Calculate spectrally-resolved profiles of optical depth, single-scattering
+    albedo, and asymmetry parameter for a user-input particle radius distribution
+    Parameters
+    ----------
+    wave_in : ndarray
+        your wavelength grid in microns
+    ndz : float
+        Column density of total particle concentration (#/cm^2)
+            Note: set to whatever, it's your free knob
+            ---- this does not directly translate to something physical because it's for all particles in your slab
+            May have to use values of 1e8 or so
+    radius : ndarray
+        Radius bin values - the range of particle sizes of interest. Maybe measured in the lab,
+        Ensure radius_unit is specified
+    radius_unit : astropy.unit.Units
+        Astropy compatible unit
+    qscat : ndarray
+        Scattering efficiency
+    qext : ndarray
+        Extinction efficiency
+    cos_qscat : ndarray
+        qscat-weighted <cos (scattering angle)>
+    r_distribution : ndarray
+        the radius distribution in each bin. Maybe measured from the lab, generated from microphysics, etc.
+        Should integrate to 1.
+    verbose: bool
+        print out warnings or not
+    Returns
+    -------
+    opd : ndarray
+        extinction optical depth due to all condensates in layer
+    w0 : ndarray
+        single scattering albedo
+    g0 : ndarray
+        asymmetry parameter = Q_scat wtd avg of <cos theta>
+    """
+
+    radius = (radius*radius_unit).to(u.cm)
+    radius = radius.value
+
+    wavenumber_grid = 1e4/wave_in
+    wavenumber_grid = np.array([item[0] for item in wavenumber_grid])
+    nwave = len(wavenumber_grid)
+    PI=np.pi
+    nrad = len(radius) ## where radius is the radius grid of the particle size distribution
+
+    scat= np.zeros((nwave))
+    ext = np.zeros((nwave))
+    cqs = np.zeros((nwave))
+
+    opd = np.zeros((nwave))
+    w0 = np.zeros((nwave))
+    g0 = np.zeros((nwave))
+
+    opd_scat = 0.
+    opd_ext = 0.
+    cos_qs = 0.
+
+        #  Calculate normalization factor
+    for irad in range(nrad):
+            rr = radius[irad] # the get the radius at each grid point, this is in nanometers
+
+            each_r_bin = ndz * (r_distribution[irad]) # weight the radius bin by the distribution
+            pir2ndz = PI * rr**2 * each_r_bin # find the weighted cross section
+
+            for iwave in range(nwave):
+                scat[iwave] = scat[iwave] + qscat[iwave,irad]*pir2ndz
+                ext[iwave] = ext[iwave] + qext[iwave,irad]*pir2ndz
+                cqs[iwave] = cqs[iwave] + cos_qscat[iwave,irad]*pir2ndz
+
+
+                    # calculate the spectral optical depth profile etc
+    for iwave in range(nwave):
+            opd_scat = 0.
+            opd_ext = 0.
+            cos_qs = 0.
+
+            opd_scat = opd_scat + scat[iwave]
+            opd_ext = opd_ext + ext[iwave]
+            cos_qs = cos_qs + cqs[iwave]
+
+
+            if( opd_scat > 0. ):
+                            opd[iwave] = opd_ext
+                            w0[iwave] = opd_scat / opd_ext
+                            g0[iwave] = cos_qs / opd_scat
+
+    return opd, w0, g0, wavenumber_grid

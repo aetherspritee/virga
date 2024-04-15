@@ -420,7 +420,7 @@ def calc_qc(
     """
 
     get_pvap = getattr(pvaps, gas_name)
-    if gas_name == "Mg2SiO4":
+    if gas_name in ['Mg2SiO4','CaTiO3','CaAl12O19','FakeHaze','H2SO4','KhareHaze','SteamHaze300K','SteamHaze400K']:
         pvap = get_pvap(t_layer, p_layer, mh=mh)
     else:
         pvap = get_pvap(t_layer, mh=mh)
