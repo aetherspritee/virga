@@ -5,7 +5,7 @@ import os
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
-sys.path.append(os.path.dirname("/Users/dusc/Code/master/dla-particles/"))
+sys.path.append(os.path.dirname("/home/dsc/master/dla-particles/"))
 
 from particle import Particle
 
@@ -13,7 +13,7 @@ from pathlib import Path
 import csv, time, subprocess, re
 # yuh
 
-AGG_GEN_BIN_PATH = "~/dsc/aggregate_generator/aggregate_gen_main"
+AGG_GEN_BIN_PATH = "/home/dsc/aggregate_generator/aggregate_gen_main"
 
 class ParticleGenerator():
     def __init__(self) -> None:
@@ -30,9 +30,9 @@ class ParticleGenerator():
 
     def aggregate_generator(self, radius: float, refrind: complex, df: float, N: int, directory: Path, layer: int=10) -> Path:
         n1 = N/(2**layer)
-        p = subprocess.Popen([AGG_GEN_BIN_PATH, f"{n1}", f"{layer}", "1.0", f"{df}", "1"])
-        p.communicate()
-        time.sleep(5)
+        pr = subprocess.Popen([AGG_GEN_BIN_PATH, f"{n1}", f"{layer}", "1.0", f"{df}", "1"])
+        pr.communicate()
+        # time.sleep(5)
 
         # parse results
         p = Particle(with_seed=False)
@@ -41,14 +41,15 @@ class ParticleGenerator():
 
         # scale particle and prep
         p.scale(radius*1e-9) # scale to nm
-        csv_name = f"agg_gen_{N}_{radius}_{df}_{refrind}.csv"
-        p.export_particle(str(directory)+csv_name)
+        csv_name = f"agg_gen_{N}_{radius}_{df}.csv"
+        print(f"{str(directory / Path(csv_name)) = }")
+        p.export_particle(path = str(directory/Path(csv_name)))
 
         # clean up results
         files = os.listdir()
         to_delete = [i for i in files if re.match("agg[0-9]", i)]
         for file in to_delete:
             print(file)
-            # os.remove(file)
+            os.remove(file)
 
         return directory/Path(csv_name)
