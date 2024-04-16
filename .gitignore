@@ -4,6 +4,7 @@
 *.mieff
 *.json~
 **/*.png
+*.csv
 # Jupyter Notebooks
 docs/
 .ipynb_checkpoints
