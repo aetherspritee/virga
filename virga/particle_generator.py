@@ -8,9 +8,9 @@ sys.path.append(os.path.dirname(SCRIPT_DIR))
 sys.path.append(os.path.dirname("/home/dsc/master/dla-particles/"))
 
 from particle import Particle
-
+import numpy as np
 from pathlib import Path
-import csv, time, subprocess, re
+import csv, time, subprocess, re, math
 # yuh
 
 AGG_GEN_BIN_PATH = "/home/dsc/aggregate_generator/aggregate_gen_main"
@@ -28,8 +28,10 @@ class ParticleGenerator():
             writer.writerow([0.0,0.0,0.0,radius,refrind_type_idx])
         return Path(directory) / Path(file_name)
 
-    def aggregate_generator(self, radius: float, refrind: complex, df: float, N: int, directory: Path, layer: int=10) -> Path:
-        n1 = N/(2**layer)
+    def aggregate_generator(self, radius: float, refrind: complex, df: float, N: int, directory: Path, n1: int=4) -> Path:
+        # n1 = math.ceil(N/(2**layer))
+        layer = np.log2(N/n1)
+        print(f"{layer = }")
         pr = subprocess.Popen([AGG_GEN_BIN_PATH, f"{n1}", f"{layer}", "1.0", f"{df}", "1"])
         pr.communicate()
         # time.sleep(5)
