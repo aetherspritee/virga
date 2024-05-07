@@ -15,6 +15,11 @@ import csv, time, subprocess, re, math
 
 AGG_GEN_BIN_PATH = "/home/dsc/aggregate_generator/aggregate_gen_main"
 
+class Particle():
+    def __init__(self) -> None:
+        radii.
+        pass
+
 class ParticleGenerator():
     def __init__(self) -> None:
         pass

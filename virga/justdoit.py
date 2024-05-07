@@ -489,7 +489,7 @@ def compute_yasf(
     refine_TP=True,
     og_vfall=True,
     analytical_rg=True,
-    radii: list = [0.1,0.12],
+    particle_props: Particle=DEFAULT_PARTICLE,
 ):
     """
     Just like `compute`, but using YASF for numerical light scattering of fractal particles.
@@ -563,7 +563,10 @@ def compute_yasf(
         )
 
     z_cld = None  # temporary fix
-    qc, qt, rg, reff, ndz, qc_path, pres_out, temp_out, z_out, mixl = direct_solver(
+
+    qc, qt, rg, reff, ndz, qc_path, mixl, z_cld = eddysed_fractal(
+        atmo.t_level,
+        atmo.p_level,
         atmo.t_layer,
         atmo.p_layer,
         condensibles,
@@ -573,7 +576,15 @@ def compute_yasf(
         mmw,
         atmo.g,
         atmo.kz,
-        atmo.fsed,
+        atmo.mixl,
+        fsed_in,
+        atmo.b,
+        atmo.eps,
+        atmo.scale_h,
+        atmo.z_top,
+        atmo.z_alpha,
+        min(atmo.z),
+        atmo.param,
         mh,
         atmo.sig,
         rmin,
@@ -581,11 +592,17 @@ def compute_yasf(
         atmo.d_molecule,
         atmo.eps_k,
         atmo.c_p_factor,
-        direct_tol,
-        refine_TP,
         og_vfall,
-        analytical_rg,
+        supsat=atmo.supsat,
+        verbose=atmo.verbose,
+        do_virtual=True, # TODO: make this available in function as arg
+        N=N,
+        Df=Df,
+        kf=kf,
     )
+    pres_out = atmo.p_layer
+    temp_out = atmo.t_layer
+    z_out = atmo.z
 
 
     print("Starting optical calculations")
@@ -1178,6 +1195,310 @@ def calc_optics(
     if (warning != "") & (verbose):
         print(warning0 + warning + " Turn off warnings by setting verbose=False.")
     return opd, w0, g0, opd_gas
+
+
+def eddysed_fractal(
+    t_top,
+    p_top,
+    t_mid,
+    p_mid,
+    condensibles,
+    gas_mw,
+    gas_mmr,
+    rho_p,
+    mw_atmos,
+    gravity,
+    kz,
+    mixl,
+    fsed,
+    b,
+    eps,
+    scale_h,
+    z_top,
+    z_alpha,
+    z_min,
+    param,
+    mh,
+    sig,
+    rmin,
+    nrad,
+    d_molecule,
+    eps_k,
+    c_p_factor,
+    og_vfall=True,
+    do_virtual=True,
+    supsat=0,
+    verbose=True,
+    N: int=128,
+    Df: float=1.8,
+    kf: float=1.0,
+):
+    """
+    Given an atmosphere and condensates, calculate size and concentration
+    of condensates in balance between eddy diffusion and sedimentation.
+
+    Parameters
+    ----------
+    t_top : ndarray
+        Temperature at each layer (K)
+    p_top : ndarray
+        Pressure at each layer (dyn/cm^2)
+    t_mid : ndarray
+        Temperature at each midpoint (K)
+    p_mid : ndarray
+        Pressure at each midpoint (dyn/cm^2)
+    condensibles : ndarray or list of str
+        List or array of condensible gas names
+    gas_mw : ndarray
+        Array of gas mean molecular weight from `gas_properties`
+    gas_mmr : ndarray
+        Array of gas mixing ratio from `gas_properties`
+    rho_p : float
+        density of condensed vapor (g/cm^3)
+    mw_atmos : float
+        Mean molecular weight of the atmosphere
+    gravity : float
+        Gravity of planet cgs
+    kz : float or ndarray
+        Kzz in cgs, either float or ndarray depending of whether or not
+        it is set as input
+    fsed : float
+        Sedimentation efficiency coefficient, unitless
+    b : float
+        Denominator of exponential in sedimentation efficiency  (if param is 'exp')
+    eps: float
+        Minimum value of fsed function (if param=exp)
+    scale_h : float
+        Scale height of the atmosphere
+    z_top : float
+        Altitude at each layer
+    z_alpha : float
+        Altitude at which fsed=alpha for variable fsed calculation
+    param : str
+        fsed parameterisation
+        'const' (constant), 'exp' (exponential density derivation)
+    mh : float
+        Atmospheric metallicity in NON log units (e.g. 1 for 1x solar)
+    sig : float
+        Width of the log normal particle distribution
+    d_molecule : float
+        diameter of atmospheric molecule (cm) (Rosner, 2000)
+        (3.711e-8 for air, 3.798e-8 for N2, 2.827e-8 for H2)
+        Set in Atmosphere constants
+    eps_k : float
+        Depth of the Lennard-Jones potential well for the atmosphere
+        Used in the viscocity calculation (units are K) (Rosner, 2000)
+    c_p_factor : float
+        specific heat of atmosphere (erg/K/g) . Usually 7/2 for ideal gas
+        diatomic molecules (e.g. H2, N2). Technically does slowly rise with
+        increasing temperature
+    og_vfall : bool , optional
+        optional, default = True. True does the original fall velocity calculation.
+        False does the updated one which runs a tad slower but is more consistent.
+        The main effect of turning on False is particle sizes in the upper atmosphere
+        that are slightly bigger.
+    do_virtual : bool,optional
+        optional, Default = True which adds a virtual layer if the
+        species condenses below the model domain.
+    supsat : float, optional
+        Default = 0 , Saturation factor (after condensation)
+
+    Returns
+    -------
+    qc : ndarray
+        condenstate mixing ratio (g/g)
+    qt : ndarray
+        gas + condensate mixing ratio (g/g)
+    rg : ndarray
+        geometric mean radius of condensate  cm
+    reff : ndarray
+        droplet effective radius (second moment of size distrib, cm)
+    ndz : ndarray
+        number column density of condensate (cm^-3)
+    qc_path : ndarray
+        vertical path of condensate
+    """
+    # default for everything is false, will fill in as True as we go
+
+    did_gas_condense = [False for i in condensibles]
+    t_bot = t_top[-1]
+    p_bot = p_top[-1]
+    z_bot = z_top[-1]
+    ngas = len(condensibles)
+    nz = len(t_mid)
+    qc = np.zeros((nz, ngas))
+    qt = np.zeros((nz, ngas))
+    rg = np.zeros((nz, ngas))
+    reff = np.zeros((nz, ngas))
+    ndz = np.zeros((nz, ngas))
+    fsed_layer = np.zeros((nz, ngas))
+    qc_path = np.zeros(ngas)
+    z_cld_out = np.zeros(ngas)
+
+    for i, igas in zip(range(ngas), condensibles):
+        q_below = gas_mmr[i]
+
+        # include decrease in condensate mixing ratio below model domain
+        if do_virtual:
+            z_cld = None
+            qvs_factor = (supsat + 1) * gas_mw[i] / mw_atmos
+            get_pvap = getattr(pvaps, igas)
+            if igas in ['Mg2SiO4','CaTiO3','CaAl12O19','FakeHaze','H2SO4','KhareHaze','SteamHaze300K','SteamHaze400K']:
+                pvap = get_pvap(t_bot, p_bot, mh=mh)
+            else:
+                pvap = get_pvap(t_bot, mh=mh)
+
+            qvs = qvs_factor * pvap / p_bot
+            if qvs <= q_below:
+                # find the pressure at cloud base
+                #   parameters for finding root
+                p_lo = p_bot
+                p_hi = p_bot * 1e3
+
+                # temperature gradient
+                dtdlnp = (t_top[-2] - t_bot) / np.log(p_bot / p_top[-2])
+
+                #   load parameters into qvs_below common block
+                qv_dtdlnp = dtdlnp
+                qv_p = p_bot
+                qv_t = t_bot
+                qv_gas_name = igas
+                qv_factor = qvs_factor
+
+                try:
+                    p_base = optimize.root_scalar(
+                        qvs_below_model,
+                        bracket=[p_lo, p_hi],
+                        method="brentq",
+                        args=(
+                            qv_dtdlnp,
+                            qv_p,
+                            qv_t,
+                            qv_factor,
+                            qv_gas_name,
+                            mh,
+                            q_below,
+                        ),
+                    )  # , xtol = 1e-20)
+
+                    if verbose:
+                        print("Virtual Cloud Found: " + qv_gas_name)
+                    root_was_found = True
+                except ValueError:
+                    root_was_found = False
+
+                if root_was_found:
+                    # Yes, the gas did condense (below the grid)
+                    did_gas_condense[i] = True
+
+                    p_base = p_base.root
+                    t_base = t_bot + np.log(p_bot / p_base) * dtdlnp
+                    z_base = z_bot + scale_h[-1] * np.log(p_bot / p_base)
+
+                    #   Calculate temperature and pressure below bottom layer
+                    #   by adding a virtual layer
+
+                    p_layer_virtual = 0.5 * (p_bot + p_base)
+                    t_layer_virtual = t_bot + np.log10(p_bot / p_layer_virtual) * dtdlnp
+
+                    # we just need to overwrite
+                    # q_below from this output for the next routine
+                    (
+                        qc_v,
+                        qt_v,
+                        rg_v,
+                        reff_v,
+                        ndz_v,
+                        q_below,
+                        z_cld,
+                        fsed_layer_v,
+                    ) = layer_fractal(
+                        igas,
+                        rho_p[i],
+                        # t,p layers, then t.p levels below and above
+                        t_layer_virtual,
+                        p_layer_virtual,
+                        t_bot,
+                        t_base,
+                        p_bot,
+                        p_base,
+                        kz[-1],
+                        mixl[-1],
+                        gravity,
+                        mw_atmos,
+                        gas_mw[i],
+                        q_below,
+                        supsat,
+                        fsed,
+                        b,
+                        eps,
+                        z_bot,
+                        z_base,
+                        z_alpha,
+                        z_min,
+                        param,
+                        sig,
+                        mh,
+                        rmin,
+                        nrad,
+                        d_molecule,
+                        eps_k,
+                        c_p_factor,  # all scalaers
+                        og_vfall,
+                        z_cld,
+                    )
+
+        z_cld = None
+        for iz in range(nz - 1, -1, -1):  # goes from BOA to TOA
+            (
+                qc[iz, i],
+                qt[iz, i],
+                rg[iz, i],
+                reff[iz, i],
+                ndz[iz, i],
+                q_below,
+                z_cld,
+                fsed_layer[iz, i],
+            ) = layer_fractal(
+                igas,
+                rho_p[i],
+                # t,p layers, then t.p levels below and above
+                t_mid[iz],
+                p_mid[iz],
+                t_top[iz],
+                t_top[iz + 1],
+                p_top[iz],
+                p_top[iz + 1],
+                kz[iz],
+                mixl[iz],
+                gravity,
+                mw_atmos,
+                gas_mw[i],
+                q_below,
+                supsat,
+                fsed,
+                b,
+                eps,
+                z_top[iz],
+                z_top[iz + 1],
+                z_alpha,
+                z_min,
+                param,
+                sig,
+                mh,
+                rmin,
+                nrad,
+                d_molecule,
+                eps_k,
+                c_p_factor,  # all scalars
+                og_vfall,
+                z_cld,
+            )
+
+            qc_path[i] = qc_path[i] + qc[iz, i] * (p_top[iz + 1] - p_top[iz]) / gravity
+        z_cld_out[i] = z_cld
+
+    return qc, qt, rg, reff, ndz, qc_path, mixl, z_cld_out
 
 
 def eddysed(
