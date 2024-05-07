@@ -73,6 +73,22 @@ def advdiff(
     advdif = advdif - qt
     return advdif
 
+def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",N=128,kf=1.0,Df=1.8):
+    """
+    in case of a fractal particle, rhop is the density of the monomer!!
+    """
+    # TODO: extend for particles with different sizes and density
+    assert (mode == "sphere" or mode == "fractal"), "mode needs to be either 'sphere' or 'fractal'"
+    if mode == "sphere":
+        return vfall(r,grav,mw_atmos, mfp, visc, t, p, rhop)
+    elif mode == "fractal":
+        if Df < 2.0:
+            r_agg = r * np.power(kf,-Df) * np.power(N,Df)
+            return vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, Df, r_agg)
+        else:
+            r_agg = r * np.power(kf,-Df) * np.power(N,Df)
+            rho_agg = N*rhop
+            return my_vfall_aggregrates_ohno(r_agg, rho_agg, grav, mw_atmos, mfp, t,p)
 
 def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
     """
@@ -197,7 +213,7 @@ def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
 
     return vfall_r
 
-def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, D=2, Ragg=1):
+def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, D=2.0, Ragg=1.0):
     """
     Calculate fallspeed for a particle at one layer in an
     atmosphere, assuming low Reynolds number and in the molecular regime (Epstein drag),
@@ -226,6 +242,7 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, D=2, Ragg=1):
     D : float
         fractal number (Default is 2 because function reduces to monomers at this value).
     """
+    # FIXME: Integrate kf here SOMEHOW
     R_GAS = 8.3143e7  #universial gas constant; cgs units cm3-bar/mole-K
     k = 1.38e-16  #boltzmann contant in cgs units -  cm2 g s-2 K-1 (ergs/K)
 
@@ -233,7 +250,7 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, D=2, Ragg=1):
 
     mass = mw_atmos/N_avo
 
-    rho_atmos = (mw_atmos*p) / (R*t) #atmospheric density
+    rho_atmos = (mw_atmos*p) / (R_GAS*t) #atmospheric density
     drho = rhop - rho_atmos
     v_thermal = np.sqrt((3*k*t)/mass) #root mean speed of the gas
 
@@ -244,7 +261,7 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, D=2, Ragg=1):
 
     return vfall_epstein_agg_r
 
-def vfall_aggregrates_ohno(r, grav,mw_atmos,mfp, t, p, rhop, ad_qc, D=2):
+def vfall_aggregrates_ohno(r, grav,mw_atmos,mfp, t, p, rhop, ad_qc, kf=1,D=2):
     """
     Calculates fallspeed for a fractal aggegrate particle as performed
     by Ohno et al., 2020, with an outer
@@ -290,7 +307,7 @@ def vfall_aggregrates_ohno(r, grav,mw_atmos,mfp, t, p, rhop, ad_qc, D=2):
     Ragg = r * N**(1/D)
 
     mass = mw_atmos/N_avo
-    rho_atmos = (mw_atmos*p) / (R*t) #atmospheric density
+    rho_atmos = (mw_atmos*p) / (R_GAS*t) #atmospheric density
     drho = rho_agg - rho_atmos
 
     kn = mfp / Ragg #Knudsen number
@@ -308,6 +325,34 @@ def vfall_aggregrates_ohno(r, grav,mw_atmos,mfp, t, p, rhop, ad_qc, D=2):
     return vfall_r_ohno
 
 
+def my_vfall_aggregrates_ohno(r_agg,rho_agg, grav,mw_atmos,mfp, t, p):
+    #Define some constants
+    R_GAS = 8.3143e7  #universial gas constant; cgs units cm3-bar/mole-K
+    k = 1.38e-16  #boltzmann contant in cgs units -  cm2 g s-2 K-1 (ergs/K)
+    N_avo = 6.022e23 #avogadro's number
+
+    #determine the number density of monomer particles
+
+    #calculate the aggregrate radius based on the fractal dimension, monomer radius, and number density of monomers
+
+    mass = mw_atmos/N_avo
+    rho_atmos = (mw_atmos*p) / (R_GAS*t) #atmospheric density
+    drho = rho_agg - rho_atmos
+    kn = mfp / r_agg #Knudsen number
+    beta = 1.0 + (1.26*kn) #Cunningham correction (slip factor for gas kinetic effects)
+    v_thermal = np.sqrt((8*k*t)/(mass*np.pi)) #thermal speed of the gas
+
+    #visc = (1.0/3.0)*rho_atmos*v_thermal*mfp #viscosity of the atmosphere, appropriate for large Kn (Esptein)
+    visc = 5.877e-6 * np.sqrt(t) #in dyne/cm^2 with t in K (via Woitke & Helling 2003)
+
+    vfall_stokes = (2.0/9.0) * beta * grav * ((r_agg)**2) * (drho/visc)
+    v_bracket = (1.0 + (((0.45/54.0) * (grav/((visc)**2)) * ((r_agg)**3) * rho_atmos * rho_agg)**(2./5.)))**(-5.0/4.0)
+
+    vfall_r_ohno = vfall_stokes  * v_bracket
+
+    return vfall_r_ohno
+
+
 def vfall_find_root(
     r,
     grav=None,
@@ -318,6 +363,8 @@ def vfall_find_root(
     p=None,
     rhop=None,
     w_convect=None,
+    Df=None,
+    mode="sphere"
 ):
     """
     This is used to find F(X)-y=0 where F(X) is the fall speed for
@@ -328,10 +375,21 @@ def vfall_find_root(
     Therefore, it is the same as the `vfall` function but with the
     subtraction of the convective velocity scale (cm/s) w_convect.
     """
-    vfall_r = vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop)
+    if mode == "sphere":
+        vfall_r = vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop)
+        return vfall_r - w_convect
 
-    return vfall_r - w_convect
+    elif mode == "fractal":
+        assert Df is not None, "Need a fractal dimension to use with fractal particle"
 
+        if Df < 2.0:
+            # use ohno fall speed
+            vfall_r = vfall_aggregrates_ohno(r, grav,mw_atmos, mfp, t, p ,rhop, ad_qc=, D=Df)
+        else:
+            # regular fall speed
+            vfall_r = vfall_aggregrates()
+
+        return vfall_r - w_convect
 
 def force_balance(vf, r, grav, mw_atmos, mfp, visc, t, p, rhop, gas_kinetics=True):
     """ "

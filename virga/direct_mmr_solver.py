@@ -405,6 +405,7 @@ def calc_qc(
                     k = kz[i]
                     if og_vfall:
                         rw_temp = optimize.root_scalar(
+                            # TODO: use aggregate fall vel
                             vfall_find_root,
                             bracket=[rlo, rhi],
                             method="brentq",
@@ -475,6 +476,8 @@ def calc_qc(
             for j in range(len(r_)):
                 if og_vfall:
                     vfall_temp.append(
+                        # TODO: use aggregate fall vel
+                        vfal
                         vfall(r_[j], gravity, mw_atmos, mfp(T, P), visc(T), T, P, rho_p)
                     )
                 else:
