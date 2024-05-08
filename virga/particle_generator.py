@@ -7,7 +7,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 sys.path.append(os.path.dirname("/home/dsc/master/dla-particles/"))
 
-from particle import Particle
+from particle import Particle as PParticle
 import numpy as np
 from pathlib import Path
 import csv, time, subprocess, re, math
@@ -16,9 +16,13 @@ import csv, time, subprocess, re, math
 AGG_GEN_BIN_PATH = "/home/dsc/aggregate_generator/aggregate_gen_main"
 
 class Particle():
-    def __init__(self) -> None:
-        radii.
-        pass
+    def __init__(self, radii: list=[10, 20, 30, 40], monomer_size: float=0.1,Df: float=1.8, kf: float=1.0,rho: float=3.2) -> None:
+        self.radii = radii
+        self.monomer_size = monomer_size
+        self.Df = Df
+        self.kf = kf
+        self.N = list(kf * (np.array(radii)/monomer_size)**Df)
+        self.rho = rho
 
 class ParticleGenerator():
     def __init__(self) -> None:
@@ -33,22 +37,29 @@ class ParticleGenerator():
             writer.writerow([0.0,0.0,0.0,radius,refrind_type_idx])
         return Path(directory) / Path(file_name)
 
-    def aggregate_generator(self, radius: float, refrind: complex, df: float, N: int, directory: Path, n1: int=4) -> Path:
+    def aggregate_generator(self, radius: float, df: float, N: int, directory: Path,kf: float = 1.0, n1: int=4) -> Path:
         # n1 = math.ceil(N/(2**layer))
         layer = np.log2(N/n1)
         print(f"{layer = }")
-        pr = subprocess.Popen([AGG_GEN_BIN_PATH, f"{n1}", f"{layer}", "1.0", f"{df}", "1"])
+        pr = subprocess.Popen([AGG_GEN_BIN_PATH, f"{n1}", f"{layer}", f"{kf}", f"{df}", "1"])
         pr.communicate()
         # time.sleep(5)
 
         # parse results
-        p = Particle(with_seed=False)
-        p.import_particle_out(f"agg0_N{N}_kf1.0_Df{df}.out")
+        p = PParticle(with_seed=False)
+        p.import_particle_out(f"agg0_N{N}_kf{kf}_Df{df}.out")
         # p.visualize()
 
         # scale particle and prep
         p.scale(radius*1e-9) # scale to nm
-        csv_name = f"agg_gen_{N}_{radius}_{df}.csv"
+        csv_name = f"agg_gen_{N}_{radius}_{kf}_{df}.csv"
+        # check if already exists, else add version
+        if os.path.isfile(directory / Path(csv_name)):
+            print("File exists already, adding version tag")
+            num_of_files = 0
+            for f in os.listdir(directory):
+                num_of_files += len(re.findall(f"agg_gen_{N}_{radius}_{kf}_{df}",f))
+            csv_name = f"agg_gen_{N}_{radius}_{kf}_{df}_v{num_of_files}.csv"
         print(f"{str(directory / Path(csv_name)) = }")
         p.export_particle(path = str(directory/Path(csv_name)))
 

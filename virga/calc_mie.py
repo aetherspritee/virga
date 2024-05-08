@@ -5,18 +5,17 @@ import os
 import pandas as pd
 from jdi_utils import get_r_grid_w_max
 
-from yasfpy.particles import Particles
-from yasfpy.initial_field import InitialField
-from yasfpy.parameters import Parameters
-from yasfpy.solver import Solver
-from yasfpy.numerics import Numerics
-from yasfpy.simulation import Simulation
-from yasfpy.optics import Optics
-from particle_generator import ParticleGenerator
+from YASF.yasfpy.particles import Particles
+from YASF.yasfpy.initial_field import InitialField
+from YASF.yasfpy.parameters import Parameters
+from YASF.yasfpy.solver import Solver
+from YASF.yasfpy.numerics import Numerics
+from YASF.yasfpy.simulation import Simulation
+from YASF.yasfpy.optics import Optics
+from .particle_generator import ParticleGenerator, Particle
 from pathlib import Path
-from time import time
-import _pickle
-import bz2
+from frameworks.mmf import mmf_parsing
+
 
 def calc_mieff(wave_in, nn,kk, radius, rup, fort_calc_mie=False):
     nradii = len(radius)
@@ -305,13 +304,12 @@ def get_mie(gas, directory):
     return qext, qscat, cos_qscat, nwave, radii, wave
 
 
-def calc_scattering(radii: list[float], gas_name: str, data_dir: Path):
-    # TODO: how would one integrate the selection of model?
-    # prob write another method that builds one based on calculated cloud properties?
-    # print(f"{radii = }")
+def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: str="YASF"):
+    assert (mode == "YASF" or mode == "MMF"), "Only valid modes are 'YASF' and 'MMF'"
 
+    radii = properties.radii
     nradii = len(radii)
-    wave_in, nn, kk = get_refrind(gas_name, data_dir)
+    wave_in, _, _ = get_refrind(gas_name, data_dir)
     print(f"{wave_in = }")
     nwave = len(wave_in)  # number of wavalength bin centres for calculation
 
@@ -319,34 +317,42 @@ def calc_scattering(radii: list[float], gas_name: str, data_dir: Path):
     qscat = np.zeros((nwave, nradii))
     cos_qscat = np.zeros((nwave, nradii))
 
-    # prep yasf
+    if mode == "YASF":
+        # prep yasf
 
+        particle_generator = ParticleGenerator()
+        for r_idx in range(len(radii)):
+            particle_csv = particle_generator.aggregate_generator(radius=radii[r_idx],df=properties.Df,N=properties.N[r_idx], directory=data_dir,kf=properties.kf)
+            refractive_index_table = read_virga_refrinds(gas_name, data_dir)
+            refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
+            particles, numerics, simulation, optics = prep_yasf(refractive_index_table,particle_csv, wavelength=wave_in)
+            q_ext, q_scat, g = run_yasf(particles, numerics, simulation, optics, gas_name, data_dir, wave_in)
 
-    particle_generator = ParticleGenerator()
-    refrind = np.array([complex(nn[i],kk[i]) for i in range(len(nn))])
-    for r_idx in range(len(radii)):
-        particle_csv = particle_generator.mie_sphere(radius=radii[r_idx], refrind_type_idx=0, directory=data_dir)
-        refractive_index_table = read_virga_refrinds()
-        refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
-        particles, numerics, simulation, optics = prep_yasf(refractive_index_table,particle_csv, wavelength=wave_in)
-        q_ext, q_scat, g = run_yasf(particles, numerics, simulation, optics, gas_name, data_dir, wave_in)
-        # print(qext[:,r_idx].shape)
-        # print(q_ext.shape)
-        qext[:,r_idx] = q_ext
-        qscat[:,r_idx] = q_scat
-        cos_qscat[:,r_idx] = g*q_scat
+            qext[:,r_idx] = q_ext
+            qscat[:,r_idx] = q_scat
+            cos_qscat[:,r_idx] = g*q_scat
+
+    elif mode == "MMF":
+        material = "Enstatite"
+        refractive_index_table = read_virga_refrinds(gas_name, data_dir)
+        # refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
+        for r_idx in range(len(radii)):
+            p = mmf_parsing.run_optool(N=properties.N[r_idx],a0=properties.monomer_size,refrinds=refractive_index_table[0],rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
+            q_ext, q_scat = mmf_parsing.get_efficiencies(p, properties.N[r_idx], properties.rho)
+            qext[:,r_idx] = q_ext
+            qscat[:,r_idx] = q_scat
+            cos_qscat[:,r_idx] = p.gsca*q_scat
 
     return qext, qscat, cos_qscat, nwave, radii ,wave_in
 
-def read_virga_refrinds():
-    path = "~/virga-data/Fe.refrind"
+def read_virga_refrinds(gas_name: str, data_dir: Path):
+    path = data_dir / Path(gas_name+".refrind")
     data = pd.read_csv(
         path , delim_whitespace=True, header=0, names=["wavelength", "n", "k"]
     )
     # print(data)
 
-    name = path.split("/")[-1]
-    material = name.split(".")[0]
+    material = path.name.split(".")[0]
     # print(material)
     return [data, material]
 

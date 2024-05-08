@@ -376,15 +376,14 @@ def vfall_find_root_fractal(
     assert Df is not None, "Need a fractal dimension to use with fractal particle"
     assert N is not None, "Need number of monomers to use with fractal particle"
 
-    r_agg = r * np.power(kf,-Df) * np.power(N,Df)
     if Df < 2.0:
         # use ohno fall speed
-        rho_agg =  N*rhop / (4/3*np.pi*r_agg**3) # mass over sphere-equivalent sphere-equivalent
-        vfall_r = my_vfall_aggregrates_ohno(r_agg,rho_agg, grav,mw_atmos, mfp, t, p)
+        rho_agg =  N*rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
+        vfall_r = my_vfall_aggregrates_ohno(r,rho_agg, grav,mw_atmos, mfp, t, p)
     else:
         # regular fall speed
         # FIXME: Dont like this here either
-        vfall_r = vfall_aggregrates(r_agg, grav, mw_atmos, t, p, rhop)
+        vfall_r = vfall_aggregrates(r, grav, mw_atmos, t, p, rhop)
 
     return vfall_r - w_convect
 

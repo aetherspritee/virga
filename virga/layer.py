@@ -661,6 +661,10 @@ def layer_fractal(
     c_p_factor,
     og_vfall,
     z_cld,
+    N,
+    Df,
+    kf,
+    r_mon,
 ):
     """
     Calculate layer condensate properties by iterating on optical depth
@@ -868,6 +872,10 @@ def layer_fractal(
                 nrad,
                 og_vfall,
                 z_cld,
+                N=N,
+                Df=Df,
+                kf=kf,
+                r_mon=r_mon,
             )
 
             #   vertical sums
@@ -961,6 +969,10 @@ def calc_qc_fractal(
     nrad,
     og_vfall=True,
     z_cld=None,
+    N=list(),
+    Df=1.8,
+    kf=1.0,
+    r_mon=0.01,
 ):
     """
     Calculate condensate optical depth and effective radius for a layer,
@@ -1141,6 +1153,7 @@ def calc_qc_fractal(
                             Df,
                             N,
                             kf,
+                            r_mon,
                         ),
                     )
                 else:
@@ -1177,12 +1190,12 @@ def calc_qc_fractal(
         def pow_law(r, alpha):
             return np.log(w_convect) + alpha * np.log(r / rw_layer)
 
-        r_, rup, dr = get_r_grid(r_min=rmin, n_radii=nrad)
+        r_, _, _ = get_r_grid(r_min=rmin, n_radii=nrad)
         vfall_temp = []
         for j in range(len(r_)):
             if og_vfall:
                 vfall_temp.append(
-                    var_vfall(r_[j], gravity, mw_atmos, mfp, visc, t_layer, p_layer, rho_p, mode="fractal", N=N,kf=kf, Df=Df)
+                    var_vfall(r_[j], gravity, mw_atmos, mfp, visc, t_layer, p_layer, rho_p, mode="fractal", N=N[j],kf=kf, Df=Df)
                 )
             else:
                 vlo = 1e0
@@ -1210,6 +1223,7 @@ def calc_qc_fractal(
                         vlo = vlo / 10
                         vhi = vhi * 10
 
+        # TODO: CHECK ALL OF THIS!
         pars, cov = optimize.curve_fit(
             f=pow_law,
             xdata=r_,

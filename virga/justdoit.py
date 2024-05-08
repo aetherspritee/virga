@@ -10,7 +10,8 @@ from bokeh.io import output_notebook
 from direct_mmr_solver import direct_solver
 from justplotit import find_nearest_1d
 from calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie
-from layer import layer
+from layer import layer, layer_fractal
+from .particle_generator import Particle
 
 class Atmosphere:
     def __init__(
@@ -484,13 +485,8 @@ class Atmosphere:
 def compute_yasf(
     atmo: Atmosphere,
     directory=None,
-    as_dict=True,
-    direct_tol=1e-15,
-    refine_TP=True,
     og_vfall=True,
-    analytical_rg=True,
-    particle_props: Particle=DEFAULT_PARTICLE,
-):
+    particle_props: Particle = Particle()):
     """
     Just like `compute`, but using YASF for numerical light scattering of fractal particles.
     """
@@ -536,7 +532,16 @@ def compute_yasf(
         #     [igas], directory, directory, rmin=1e-5, nradii=10
         # )
         # determine which radii to use, might wanna move this somewhere else
-        qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(radii, igas, directory)
+
+
+        radii, _, _ = get_r_grid(rmin, n_radii=nradii)
+
+        particle_properties = Particle(list(radii),particle_props.monomer_size, particle_props.Df, particle_props.kf)
+        print(f"I WILL BUILD A PARTICLE WITH {particle_properties.N} monomers!!")
+
+        # TODO: Adjust inputs here!
+        # TODO: Add func for MMF here aswell
+        qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(particle_properties, igas, directory)
 
         print(f"{qext_gas = }")
         print(f"{qscat_gas = }")
@@ -596,9 +601,10 @@ def compute_yasf(
         supsat=atmo.supsat,
         verbose=atmo.verbose,
         do_virtual=True, # TODO: make this available in function as arg
-        N=N,
-        Df=Df,
-        kf=kf,
+        N=particle_properties.N,
+        Df=particle_properties.Df,
+        kf=particle_properties.kf,
+        r_mon=particle_properties.monomer_size
     )
     pres_out = atmo.p_layer
     temp_out = atmo.t_layer
@@ -1229,9 +1235,10 @@ def eddysed_fractal(
     do_virtual=True,
     supsat=0,
     verbose=True,
-    N: int=128,
+    N=list(),
     Df: float=1.8,
     kf: float=1.0,
+    r_mon: float=0.01,
 ):
     """
     Given an atmosphere and condensates, calculate size and concentration
@@ -1446,6 +1453,10 @@ def eddysed_fractal(
                         c_p_factor,  # all scalaers
                         og_vfall,
                         z_cld,
+                        N=N,
+                        Df=Df,
+                        kf=kf,
+                        r_mon=r_mon,
                     )
 
         z_cld = None
@@ -1493,6 +1504,10 @@ def eddysed_fractal(
                 c_p_factor,  # all scalars
                 og_vfall,
                 z_cld,
+                N=N,
+                Df=Df,
+                kf=kf,
+                r_mon=r_mon,
             )
 
             qc_path[i] = qc_path[i] + qc[iz, i] * (p_top[iz + 1] - p_top[iz]) / gravity
