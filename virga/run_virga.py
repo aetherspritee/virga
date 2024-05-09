@@ -70,7 +70,7 @@ else:
     a.gravity(gravity=grav, gravity_unit=u.Unit("m/(s**2)"))
 
     if generate:
-        df = jid_utils.hot_jupiter()
+        df = jdi_utils.hot_jupiter()
         pres = np.array(df["pressure"])
         temp = np.array(df["temperature"])
         kz = np.array(df["kz"])
