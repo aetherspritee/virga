@@ -876,7 +876,6 @@ def calc_qc(
                 if og_vfall:
                     vfall_temp.append(
                         # TODO: use aggregate fall vel
-                        vfal
                         vfall(r_[j], gravity, mw_atmos, mfp(T, P), visc(T), T, P, rho_p)
                     )
                 else:

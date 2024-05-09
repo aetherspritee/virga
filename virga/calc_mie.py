@@ -5,6 +5,16 @@ import os
 import pandas as pd
 from jdi_utils import get_r_grid_w_max
 
+import sys
+import os
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+sys.path.append(os.path.dirname("/home/dsc/master/yasf_testing"))
+sys.path.append(os.path.dirname("/home/dsc/master/"))
+sys.path.append(os.path.dirname("/home/dsc/master/frameworks/"))
+
+
 from YASF.yasfpy.particles import Particles
 from YASF.yasfpy.initial_field import InitialField
 from YASF.yasfpy.parameters import Parameters
@@ -12,10 +22,11 @@ from YASF.yasfpy.solver import Solver
 from YASF.yasfpy.numerics import Numerics
 from YASF.yasfpy.simulation import Simulation
 from YASF.yasfpy.optics import Optics
-from .particle_generator import ParticleGenerator, Particle
+from fractal_aggregates import ParticleGenerator, Particle
 from pathlib import Path
 from frameworks.mmf import mmf_parsing
 
+mmf_parsing.OPTOOL_BIN_PATH = "/home/dsc/optool/optool"
 
 def calc_mieff(wave_in, nn,kk, radius, rup, fort_calc_mie=False):
     nradii = len(radius)
@@ -334,11 +345,12 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
 
     elif mode == "MMF":
         material = "Enstatite"
-        refractive_index_table = read_virga_refrinds(gas_name, data_dir)
+        refractive_index_table = read_virga_refrinds(gas_name, data_dir)[0].to_numpy()
+        refrinds = np.array([complex(refractive_index_table[i,1],refractive_index_table[i,2]) for i in range(refractive_index_table.shape[0])])
         # refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
         for r_idx in range(len(radii)):
-            p = mmf_parsing.run_optool(N=properties.N[r_idx],a0=properties.monomer_size,refrinds=refractive_index_table[0],rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
-            q_ext, q_scat = mmf_parsing.get_efficiencies(p, properties.N[r_idx], properties.rho)
+            p = mmf_parsing.run_optool(N=properties.N[r_idx],a0=properties.monomer_size,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
+            q_ext, q_scat = mmf_parsing.get_efficiencies(p, properties.N[r_idx], properties.rho, Df=properties.Df, kf=properties.kf)
             qext[:,r_idx] = q_ext
             qscat[:,r_idx] = q_scat
             cos_qscat[:,r_idx] = p.gsca*q_scat

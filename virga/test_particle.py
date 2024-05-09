@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from particle_generator import ParticleGenerator
+from fractal_aggregates import ParticleGenerator
 from pathlib import Path
 
 p = ParticleGenerator()

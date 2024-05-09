@@ -8,7 +8,7 @@ import time
 from bokeh.plotting import show, figure
 from direct_mmr_solver import generate_altitude
 import jdi_utils
-from .particle_generator import Particle
+from fractal_aggregates import Particle
 
 #   locate data
 mieff_directory = "/home/dsc/virga-data"
@@ -72,4 +72,4 @@ kf = 1.0
 
 particle_props = Particle(monomer_size=r_mon,Df=Df,kf=kf)
 
-all_out_yasf = jdi.compute_yasf(a, directory=mieff_directory, particle_props = particle_props)
+all_out_yasf = jdi.compute_yasf(a, directory=mieff_directory, particle_props = particle_props, mode="MMF")

@@ -11,7 +11,7 @@ from direct_mmr_solver import direct_solver
 from justplotit import find_nearest_1d
 from calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie
 from layer import layer, layer_fractal
-from .particle_generator import Particle
+from fractal_aggregates import Particle
 
 class Atmosphere:
     def __init__(
@@ -486,7 +486,9 @@ def compute_yasf(
     atmo: Atmosphere,
     directory=None,
     og_vfall=True,
-    particle_props: Particle = Particle()):
+    particle_props: Particle = Particle(),
+    mode = "YASF",
+):
     """
     Just like `compute`, but using YASF for numerical light scattering of fractal particles.
     """
@@ -541,7 +543,7 @@ def compute_yasf(
 
         # TODO: Adjust inputs here!
         # TODO: Add func for MMF here aswell
-        qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(particle_properties, igas, directory)
+        qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(particle_properties, igas, directory, mode=mode)
 
         print(f"{qext_gas = }")
         print(f"{qscat_gas = }")
