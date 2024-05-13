@@ -315,7 +315,7 @@ def get_mie(gas, directory):
     return qext, qscat, cos_qscat, nwave, radii, wave
 
 
-def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: str="YASF"):
+def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: str="YASF", store=False, db_name="~/virga-data"):
     assert (mode == "YASF" or mode == "MMF"), "Only valid modes are 'YASF' and 'MMF'"
 
     radii = properties.radii
@@ -356,7 +356,61 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
             qscat[:,r_idx] = q_scat
             cos_qscat[:,r_idx] = p.gsca*q_scat
 
+    if store:
+        pd.DataFrame(
+            {"wave": wave_in, "qscat": qscat, "qext": qext, "cos_qscat": cos_qscat}
+        ).to_csv(
+            os.path.join(db_name, gas_name + f"_{mode}.mieff"),
+            sep=" ",
+            index=False,
+        )
+
     return qext, qscat, cos_qscat, nwave, radii ,wave_in
+
+def load_stored_fractal_scat_props(gas_name: str, mode: str, data_dir: Path):
+
+    df = pd.read_csv(
+        os.path.join(data_dir, gas_name + f"_{mode}.mieff"),
+        names=["wave", "qscat", "qext", "cos_qscat"],
+        sep='\+s',
+    )
+
+    nwave = int(df.iloc[0, 0])
+    nradii = int(df.iloc[0, 1])
+
+    # get the radii (all the rows where there the last three rows are nans)
+    radii = df.loc[np.isnan(df["qscat"])]["wave"].values
+
+    df = df.dropna()
+
+    assert (
+        len(radii) == nradii
+    ), "Number of radii specified in header is not the same as number of radii."
+    assert (
+        nwave * nradii == df.shape[0]
+    ), "Number of wavelength specified in header is not the same as number of waves in file"
+
+    # check if incoming wavegrid is in correct order
+    sub_array = df['wave'].values[:196]  # Extract the first 196 values
+    is_ascending = np.all(np.diff(sub_array) >= 0) # check if going from short to long wavelength
+
+    if is_ascending == False:
+        flipped_wave = np.flip(df['wave'].values.reshape(nradii, -1, nwave), axis=2).flatten()
+        flipped_qscat = np.flip(df['qscat'].values.reshape(nradii, -1, nwave), axis=2).flatten()
+        flipped_qext = np.flip(df['qext'].values.reshape(nradii, -1, nwave), axis=2).flatten()
+        flipped_cos_qscat = np.flip(df['cos_qscat'].values.reshape(nradii, -1, nwave), axis=2).flatten()
+
+        df['wave'] = flipped_wave
+        df['qscat'] = flipped_qscat
+        df['qext'] = flipped_qext
+        df['cos_qscat'] = flipped_cos_qscat
+
+    wave = df["wave"].values.reshape((nradii, nwave)).T
+    qscat = df["qscat"].values.reshape((nradii, nwave)).T
+    qext = df["qext"].values.reshape((nradii, nwave)).T
+    cos_qscat = df["cos_qscat"].values.reshape((nradii, nwave)).T
+
+    return qext, qscat, cos_qscat, nwave, radii, wave
 
 def read_virga_refrinds(gas_name: str, data_dir: Path):
     path = data_dir / Path(gas_name+".refrind")
