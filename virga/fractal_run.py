@@ -9,6 +9,7 @@ from bokeh.plotting import show, figure
 from direct_mmr_solver import generate_altitude
 import jdi_utils
 from fractal_aggregates import Particle
+from time import monotonic
 
 #   locate data
 mieff_directory = "/home/dsc/virga-data"
@@ -72,4 +73,6 @@ kf = 1.0
 
 particle_props = Particle(monomer_size=r_mon,Df=Df,kf=kf)
 
+t = monotonic()
 all_out_yasf = jdi.compute_yasf(a, directory=mieff_directory, particle_props = particle_props, mode="MMF")
+print(f"MMF based fractal aggregate virga took {monotonic()-t}")

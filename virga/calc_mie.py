@@ -321,7 +321,6 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
     radii = properties.radii
     nradii = len(radii)
     wave_in, _, _ = get_refrind(gas_name, data_dir)
-    print(f"{wave_in = }")
     nwave = len(wave_in)  # number of wavalength bin centres for calculation
 
     qext = np.zeros((nwave, nradii))
@@ -351,7 +350,7 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
         for r_idx in range(len(radii)):
             # optool uses cm
             r_mm = radii[r_idx]*1e4
-            p = mmf_parsing.run_optool(a=,a0=properties.monomer_size,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
+            p = mmf_parsing.run_optool(a=r_mm,a0=properties.monomer_size,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
             q_ext, q_scat = mmf_parsing.get_efficiencies(p, properties.N[r_idx], properties.rho, Df=properties.Df, kf=properties.kf)
             qext[:,r_idx] = q_ext
             qscat[:,r_idx] = q_scat

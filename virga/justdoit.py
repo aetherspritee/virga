@@ -519,8 +519,6 @@ def compute_yasf(
 
     assert directory != None , "Need a directory for now"
     rmin, nradii = get_radii_tentatively(directory, condensibles[0])
-    print("PRE:")
-    print(rmin, nradii)
     # TODO: alternative selection of radii
 
 
@@ -537,9 +535,12 @@ def compute_yasf(
 
 
         radii, _, _ = get_r_grid(rmin, n_radii=nradii)
+        # comment out for faster testing
+        # radii = radii[0:1]
 
         particle_properties = Particle(list(radii),particle_props.monomer_size, particle_props.Df, particle_props.kf)
-        print(f"I WILL BUILD A PARTICLE WITH {particle_properties.N} monomers!!")
+        if mode == "YASF":
+            print(f"I WILL BUILD A PARTICLE WITH {particle_properties.N} monomers!!")
 
         # TODO: Adjust inputs here!
         # TODO: Add func for MMF here aswell
@@ -559,9 +560,6 @@ def compute_yasf(
             qscat = np.zeros((nwave, nradii, ngas))
             cos_qscat = np.zeros((nwave, nradii, ngas))
 
-        print("POST:")
-        print(rmin, nradii)
-        print(radius)
         # add to master matrix that contains the per gas Mie stuff
         qext[:, :, i], qscat[:, :, i], cos_qscat[:, :, i] = (
             qext_gas,
@@ -603,10 +601,9 @@ def compute_yasf(
         supsat=atmo.supsat,
         verbose=atmo.verbose,
         do_virtual=True, # TODO: make this available in function as arg
-        N=particle_properties.N,
+        r_mon=particle_properties.monomer_size,
         Df=particle_properties.Df,
         kf=particle_properties.kf,
-        r_mon=particle_properties.monomer_size
     )
     pres_out = atmo.p_layer
     temp_out = atmo.t_layer
@@ -1134,9 +1131,9 @@ def calc_optics(
                 for irad in range(nrad):
                     rr = radius[irad]
                     arg1 = dr[irad] / (np.sqrt(2.0 * PI) * np.log(rsig))
-                    print(f"{arg1 = }")
+                    # print(f"{arg1 = }")
                     arg2 = -np.log(rr / rg[iz, igas]) ** 2 / (2 * np.log(rsig) ** 2)
-                    print(f"{arg2 = }")
+                    # print(f"{arg2 = }")
                     pir2ndz = norm * PI * rr * arg1 * np.exp(arg2) # rr*pi* PDF, what is this?
                     for iwave in range(nwave):
                         scat_gas[iz, iwave, igas] = (
@@ -1237,10 +1234,9 @@ def eddysed_fractal(
     do_virtual=True,
     supsat=0,
     verbose=True,
-    N=list(),
+    r_mon=0.01,
     Df: float=1.8,
     kf: float=1.0,
-    r_mon: float=0.01,
 ):
     """
     Given an atmosphere and condensates, calculate size and concentration
@@ -1455,10 +1451,9 @@ def eddysed_fractal(
                         c_p_factor,  # all scalaers
                         og_vfall,
                         z_cld,
-                        N=N,
+                        r_mon=r_mon,
                         Df=Df,
                         kf=kf,
-                        r_mon=r_mon,
                     )
 
         z_cld = None
@@ -1506,10 +1501,9 @@ def eddysed_fractal(
                 c_p_factor,  # all scalars
                 og_vfall,
                 z_cld,
-                N=N,
+                r_mon=r_mon,
                 Df=Df,
                 kf=kf,
-                r_mon=r_mon,
             )
 
             qc_path[i] = qc_path[i] + qc[iz, i] * (p_top[iz + 1] - p_top[iz]) / gravity

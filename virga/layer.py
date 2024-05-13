@@ -290,12 +290,8 @@ def layer(
     # Get layer averages
 
     if opd_layer > 0.0:
-        print(f"{qc_layer = }")
-        print(f"{rho_p = }")
-        print(f"{opd_layer = }")
         reff_layer = 1.5 * qc_layer / (rho_p * opd_layer)
         lnsig2 = 0.5 * np.log(sig) ** 2
-        print(f"{lnsig2 = }")
         rg_layer = reff_layer * np.exp(-5 * lnsig2)
     else:
         reff_layer = 0.0
@@ -661,10 +657,9 @@ def layer_fractal(
     c_p_factor,
     og_vfall,
     z_cld,
-    N,
+    r_mon,
     Df,
     kf,
-    r_mon,
 ):
     """
     Calculate layer condensate properties by iterating on optical depth
@@ -872,10 +867,9 @@ def layer_fractal(
                 nrad,
                 og_vfall,
                 z_cld,
-                N=N,
+                r_mon=r_mon,
                 Df=Df,
                 kf=kf,
-                r_mon=r_mon,
             )
 
             #   vertical sums
@@ -914,12 +908,8 @@ def layer_fractal(
     # Get layer averages
 
     if opd_layer > 0.0:
-        print(f"{qc_layer = }")
-        print(f"{rho_p = }")
-        print(f"{opd_layer = }")
         reff_layer = 1.5 * qc_layer / (rho_p * opd_layer)
         lnsig2 = 0.5 * np.log(sig) ** 2
-        print(f"{lnsig2 = }")
         rg_layer = reff_layer * np.exp(-5 * lnsig2)
     else:
         reff_layer = 0.0
@@ -969,10 +959,9 @@ def calc_qc_fractal(
     nrad,
     og_vfall=True,
     z_cld=None,
-    N=list(),
+    r_mon=0.01,
     Df=1.8,
     kf=1.0,
-    r_mon=0.01,
 ):
     """
     Calculate condensate optical depth and effective radius for a layer,
@@ -1151,9 +1140,8 @@ def calc_qc_fractal(
                             rho_p,
                             w_convect,
                             Df,
-                            N,
-                            kf,
                             r_mon,
+                            kf,
                         ),
                     )
                 else:
@@ -1195,7 +1183,7 @@ def calc_qc_fractal(
         for j in range(len(r_)):
             if og_vfall:
                 vfall_temp.append(
-                    var_vfall(r_[j], gravity, mw_atmos, mfp, visc, t_layer, p_layer, rho_p, mode="fractal", N=N[j],kf=kf, Df=Df)
+                    var_vfall(r_[j], gravity, mw_atmos, mfp, visc, t_layer, p_layer, rho_p, mode="fractal", r_mon=r_mon,kf=kf, Df=Df)
                 )
             else:
                 vlo = 1e0

@@ -73,7 +73,7 @@ def advdiff(
     advdif = advdif - qt
     return advdif
 
-def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",N=128,kf=1.0,Df=1.8):
+def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",r_mon=0.01,kf=1.0,Df=1.8):
     """
     in case of a fractal particle, rhop is the density of the monomer!!
     """
@@ -83,12 +83,11 @@ def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",N=128,kf=1.0,Df=1.
         return vfall(r,grav,mw_atmos, mfp, visc, t, p, rhop)
     elif mode == "fractal":
         if Df < 2.0:
-            r_agg = r * np.power(kf,-Df) * np.power(N,Df)
             # FIXME: i dont like this
-            return vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, kf=kf,D=Df, Ragg=r_agg)
+            return vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop, kf=kf,D=Df, Ragg=r)
         else:
-            r_agg = r * np.power(kf,-Df) * np.power(N,Df)
-            rho_agg =  N*rhop / (4/3*np.pi*r_agg**3) # mass over sphere-equivalent sphere-equivalent
+            N = kf * (r/r_mon)**Df
+            rho_agg =  N*rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
             return my_vfall_aggregrates_ohno(r_agg, rho_agg, grav, mw_atmos, mfp, t,p)
 
 def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
@@ -264,6 +263,7 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, kf=1.0,D=2.0, Ragg=1.0):
     # t * g = velocity, what is this
     # (Ragg/r)**(D) = N?
     vfall_epstein_agg_r = t_stop_epstein_r * grav * kf * (Ragg/r)**(D-2)
+    print(f"{vfall_epstein_agg_r = }")
 
     return vfall_epstein_agg_r
 
@@ -355,7 +355,7 @@ def my_vfall_aggregrates_ohno(r_agg,rho_agg, grav,mw_atmos,mfp, t, p):
     v_bracket = (1.0 + (((0.45/54.0) * (grav/((visc)**2)) * ((r_agg)**3) * rho_atmos * rho_agg)**(2./5.)))**(-5.0/4.0)
 
     vfall_r_ohno = vfall_stokes  * v_bracket
-
+    print(f"{vfall_r_ohno = }")
     return vfall_r_ohno
 
 
@@ -370,20 +370,25 @@ def vfall_find_root_fractal(
     rhop=None,
     w_convect=None,
     Df=None,
-    N=None,
+    r_mon=None,
     kf=1.0,
 ):
     assert Df is not None, "Need a fractal dimension to use with fractal particle"
-    assert N is not None, "Need number of monomers to use with fractal particle"
-
+    assert r_mon is not None, "Need radius of monomers to use with fractal particle"
     if Df < 2.0:
-        # use ohno fall speed
-        rho_agg =  N*rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
-        vfall_r = my_vfall_aggregrates_ohno(r,rho_agg, grav,mw_atmos, mfp, t, p)
-    else:
         # regular fall speed
-        # FIXME: Dont like this here either
+        # FIXME: Dont like this _here_ either
+        print(f"{r = }")
         vfall_r = vfall_aggregrates(r, grav, mw_atmos, t, p, rhop)
+    else:
+        # use ohno fall speed
+        print(f"{r = }")
+        # print(f"{r_mon = }")
+        N = kf * (r/r_mon)**Df # FIXME: this is astronomically high lmfao
+        # print(f"{N = }")
+        rho_agg =  N*rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
+        # print(f"{rho_agg = }")
+        vfall_r = my_vfall_aggregrates_ohno(r,rho_agg, grav,mw_atmos, mfp, t, p)
 
     return vfall_r - w_convect
 

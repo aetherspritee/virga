@@ -419,7 +419,7 @@ def fractal_calc_qc(
                                 rho_p,
                                 w_convect(T, P, k),
                                 Df,
-                                N,
+                                r_mon,
                                 kf,
                             ),
                         )
