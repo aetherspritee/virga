@@ -332,7 +332,8 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
 
         particle_generator = ParticleGenerator()
         for r_idx in range(len(radii)):
-            particle_csv = particle_generator.aggregate_generator(radius=radii[r_idx],df=properties.Df,N=properties.N[r_idx], directory=data_dir,kf=properties.kf)
+
+            particle_csv = particle_generator.fracval(r_mon=properties.monomer_size,df=properties.Df,N=properties.N[r_idx], directory=data_dir,kf=properties.kf)
             refractive_index_table = read_virga_refrinds(gas_name, data_dir)
             refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
             particles, numerics, simulation, optics = prep_yasf(refractive_index_table,particle_csv, wavelength=wave_in)
