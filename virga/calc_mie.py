@@ -4,7 +4,7 @@ import PyMieScatt as ps
 import os
 import pandas as pd
 from jdi_utils import get_r_grid_w_max
-
+import csv
 import sys
 import os
 
@@ -315,7 +315,7 @@ def get_mie(gas, directory):
     return qext, qscat, cos_qscat, nwave, radii, wave
 
 
-def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: str="YASF", store=False, db_name="~/virga-data"):
+def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: str="YASF", store=False, db_name="/home/dsc/virga-data"):
     assert (mode == "YASF" or mode == "MMF"), "Only valid modes are 'YASF' and 'MMF'"
 
     radii = properties.radii
@@ -358,22 +358,25 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
             cos_qscat[:,r_idx] = p.gsca*q_scat
 
     if store:
-        pd.DataFrame(
-            {"wave": wave_in, "qscat": qscat, "qext": qext, "cos_qscat": cos_qscat}
-        ).to_csv(
-            os.path.join(db_name, gas_name + f"_{mode}.mieff"),
-            sep=" ",
-            index=False,
-        )
+        with open(os.path.join(db_name, gas_name + f"_{mode}.mieff"),"a") as f:
+            pass
+        with open(os.path.join(db_name, gas_name + f"_{mode}.mieff"),"w") as f:
+            writer = csv.writer(f, delimiter =' ')
+            writer.writerow([nwave, len(radii)])
+            for r in range(len(radii)):
+                writer.writerow([radii[r]])
+                for w in range(len(wave_in)):
+                    writer.writerow([wave_in[w], qscat[w,r], qext[w,r], cos_qscat[w,r]])
+
 
     return qext, qscat, cos_qscat, nwave, radii ,wave_in
 
-def load_stored_fractal_scat_props(gas_name: str, mode: str, data_dir: Path):
+def load_stored_fractal_scat_props(gas_name: str, mode: str, data_dir: Path=Path("/home/dsc/virga-data/")):
 
     df = pd.read_csv(
         os.path.join(data_dir, gas_name + f"_{mode}.mieff"),
         names=["wave", "qscat", "qext", "cos_qscat"],
-        sep='\+s',
+        sep=' ',
     )
 
     nwave = int(df.iloc[0, 0])

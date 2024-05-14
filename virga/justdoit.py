@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from bokeh.io import output_notebook
 from direct_mmr_solver import direct_solver
 from justplotit import find_nearest_1d
-from calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie
+from calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie, load_stored_fractal_scat_props
 from layer import layer, layer_fractal
 from fractal_aggregates import Particle
 
@@ -488,6 +488,8 @@ def compute_yasf(
     og_vfall=True,
     particle_props: Particle = Particle(),
     mode = "YASF",
+    store_scat_props = False,
+    load_scat_props = True,
 ):
     """
     Just like `compute`, but using YASF for numerical light scattering of fractal particles.
@@ -544,7 +546,10 @@ def compute_yasf(
 
         # TODO: Adjust inputs here!
         # TODO: Add func for MMF here aswell
-        qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(particle_properties, igas, directory, mode=mode)
+        if not load_scat_props:
+            qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(particle_properties, igas, directory, mode=mode, store=store_scat_props)
+        else:
+            qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = load_stored_fractal_scat_props(gas_name=igas, mode=mode)
 
         print(f"{qext_gas = }")
         print(f"{qscat_gas = }")
