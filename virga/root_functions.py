@@ -88,7 +88,7 @@ def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",r_mon=0.01,kf=1.0,
         else:
             N = kf * (r/r_mon)**Df
             rho_agg =  N*rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
-            return my_vfall_aggregrates_ohno(r_agg, rho_agg, grav, mw_atmos, mfp, t,p)
+            return my_vfall_aggregrates_ohno(r, rho_agg, grav, mw_atmos, mfp, t,p)
 
 def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
     """
@@ -314,7 +314,7 @@ def vfall_aggregrates_ohno(r, grav,mw_atmos,mfp, t, p, rhop, ad_qc, kf=1.0,D=2.0
 
     mass = mw_atmos/N_avo
     rho_atmos = (mw_atmos*p) / (R_GAS*t) #atmospheric density
-    drho = rho_agg - rho_atmos
+    drho = rhop - rho_atmos
 
     kn = mfp / Ragg #Knudsen number
     beta = 1.0 + (1.26*kn) #Cunningham correction (slip factor for gas kinetic effects)
@@ -324,7 +324,7 @@ def vfall_aggregrates_ohno(r, grav,mw_atmos,mfp, t, p, rhop, ad_qc, kf=1.0,D=2.0
     visc = 5.877e-6 * np.sqrt(t) #in dyne/cm^2 with t in K (via Woitke & Helling 2003)
 
     vfall_stokes = (2.0/9.0) * beta * grav * ((Ragg)**2) * (drho/visc)
-    v_bracket = (1.0 + (((0.45/54.0) * (grav/((visc)**2)) * ((Ragg)**3) * rho_atmos * rho_agg)**(2./5.)))**(-5.0/4.0)
+    v_bracket = (1.0 + (((0.45/54.0) * (grav/((visc)**2)) * ((Ragg)**3) * rho_atmos * rhop)**(2./5.)))**(-5.0/4.0)
 
     vfall_r_ohno = vfall_stokes  * v_bracket
 
@@ -343,7 +343,7 @@ def my_vfall_aggregrates_ohno(r_agg,rho_agg, grav,mw_atmos,mfp, t, p):
 
     mass = mw_atmos/N_avo
     rho_atmos = (mw_atmos*p) / (R_GAS*t) #atmospheric density
-    drho = rho_agg - rho_atmos
+    # drho = rho_agg - rho_atmos
     kn = mfp / r_agg #Knudsen number
     beta = 1.0 + (1.26*kn) #Cunningham correction (slip factor for gas kinetic effects)
     v_thermal = np.sqrt((8*k*t)/(mass*np.pi)) #thermal speed of the gas
@@ -351,7 +351,7 @@ def my_vfall_aggregrates_ohno(r_agg,rho_agg, grav,mw_atmos,mfp, t, p):
     #visc = (1.0/3.0)*rho_atmos*v_thermal*mfp #viscosity of the atmosphere, appropriate for large Kn (Esptein)
     visc = 5.877e-6 * np.sqrt(t) #in dyne/cm^2 with t in K (via Woitke & Helling 2003)
 
-    vfall_stokes = (2.0/9.0) * beta * grav * ((r_agg)**2) * (drho/visc)
+    vfall_stokes = (2.0/9.0) * beta * grav * ((r_agg)**2) * (rho_agg/visc)
     v_bracket = (1.0 + (((0.45/54.0) * (grav/((visc)**2)) * ((r_agg)**3) * rho_atmos * rho_agg)**(2./5.)))**(-5.0/4.0)
 
     vfall_r_ohno = vfall_stokes  * v_bracket
