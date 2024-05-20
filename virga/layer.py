@@ -1118,7 +1118,8 @@ def calc_qc_fractal(
         #   Find <rw> corresponding to <w_convect> using function vfall()
 
         #   range of particle radii to search (cm)
-        rlo = 1.0e-10
+        # FIXME: im not sure this is a smart idea, but i think its fine
+        rlo = 10*r_mon
         rhi = 10.0
 
         #   precision of vfall solution (cm/s)
@@ -1166,6 +1167,7 @@ def calc_qc_fractal(
         # fall velocity particle radius
         if og_vfall:
             rw_layer = rw_temp.root
+            print(f"{rw_layer = }")
         else:
             rw_layer = rw_temp
 
