@@ -27,6 +27,7 @@ from pathlib import Path
 from frameworks.mmf import mmf_parsing
 
 mmf_parsing.OPTOOL_BIN_PATH = "/home/dsc/optool/optool"
+FRACAL_BIN_PATH = "/home/dsc/master/FracVAL/FRACVAL"
 
 def calc_mieff(wave_in, nn,kk, radius, rup, fort_calc_mie=False):
     nradii = len(radius)
@@ -330,9 +331,10 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
     if mode == "YASF":
         # prep yasf
 
-        particle_generator = ParticleGenerator()
+        particle_generator = ParticleGenerator(fracval_bin_path = FRACAL_BIN_PATH)
         for r_idx in range(len(radii)):
 
+            print(f"FRAVAL: {properties.Df}, {properties.kf}, {properties.monomer_size}, {properties.N[r_idx]}")
             particle_csv = particle_generator.fracval(r_mon=properties.monomer_size,df=properties.Df,N=properties.N[r_idx], directory=data_dir,kf=properties.kf)
             refractive_index_table = read_virga_refrinds(gas_name, data_dir)
             refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
@@ -438,6 +440,7 @@ def prep_yasf(refractive_index_table: list, particle_csv: Path, wavelength: list
 
     # load scattering modules
     spheres = spheres.to_numpy()
+    print(f"{spheres = }")
     particles = Particles(spheres[:,0:3], spheres[:,3], spheres[:,4], refractive_index_table=refractive_index_table)
 
     initial_field = InitialField(beam_width=0,
