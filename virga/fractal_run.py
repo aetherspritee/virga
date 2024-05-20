@@ -74,5 +74,6 @@ kf = 1.0
 particle_props = Particle(monomer_size=r_mon,Df=Df,kf=kf)
 
 t = monotonic()
-all_out_yasf = jdi.compute_yasf(a, directory=mieff_directory, particle_props = particle_props, mode="MMF", store_scat_props=False,load_scat_props=True)
+# all_out_yasf = jdi.compute_yasf(a, directory=mieff_directory, particle_props = particle_props, mode="MMF", store_scat_props=True,load_scat_props=False)
+all_out_yasf = jdi.compute_yasf(a, directory=mieff_directory, particle_props = particle_props, mode="YASF", store_scat_props=True,load_scat_props=False)
 print(f"MMF based fractal aggregate virga took {monotonic()-t}")

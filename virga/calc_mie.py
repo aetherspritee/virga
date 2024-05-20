@@ -440,7 +440,6 @@ def prep_yasf(refractive_index_table: list, particle_csv: Path, wavelength: list
 
     # load scattering modules
     spheres = spheres.to_numpy()
-    print(f"{spheres = }")
     particles = Particles(spheres[:,0:3], spheres[:,3], spheres[:,4], refractive_index_table=refractive_index_table)
 
     initial_field = InitialField(beam_width=0,
