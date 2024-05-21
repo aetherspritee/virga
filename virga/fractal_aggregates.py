@@ -75,7 +75,11 @@ class ParticleGenerator():
 
         return directory/Path(csv_name)
 
-    def fracval(self,r_mon: float, df: float, kf: float, N: int, directory: Path) -> Path:
+    def fracval(self,r_mon: float, df: float, kf: float, N: int, r_agg: float, directory: Path, nlim = 256) -> Path:
+        if N > nlim:
+            # i dont want to die while this shit runs, so limiting the number of maximum monomers in a given particle
+            N = nlim
+            r_mon = (kf/N * r_agg**df)**(1/df)
         pr = subprocess.Popen([self.fracval_bin_path, f"{N}", f"{1}", f"{df}", f"{kf}"])
         pr.communicate()
 

@@ -149,15 +149,9 @@ plt.legend(loc="best")
 plt.savefig("number_density.png")
 # plt.show()
 
-import sys
-
-sys.exit()
 
 show(jpi.opd_by_gas(output[0]))
 show(jpi.opd_by_gas(output[1]))
-import sys
-
-sys.exit()
 
 z = all_out["altitude"]
 reff = all_out["droplet_eff_r"][:, 0]
