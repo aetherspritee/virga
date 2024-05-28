@@ -1,12 +1,19 @@
+import os, sys
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+sys.path.append(os.path.dirname("/home/dsc/master/"))
+sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
+
 from scipy.integrate import solve_ivp
 from scipy.interpolate import UnivariateSpline, interp1d
 from scipy import optimize
 import numpy as np
 import pandas as pd
-import pvaps
-from root_functions import var_vfall, vfall_find_root, vfall_find_root_fractal, find_rg, moment, solve_force_balance
+from virga import pvaps
+from virga.root_functions import var_vfall, vfall_find_root, vfall_find_root_fractal, find_rg, moment, solve_force_balance
 import time
-import justdoit as jdi
+import virga.justdoit as jdi
 
 
 def direct_solver(

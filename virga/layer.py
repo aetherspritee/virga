@@ -1,9 +1,14 @@
-#!/usr/bin/env python3
+import os,sys
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+sys.path.append(os.path.dirname("/home/dsc/master/"))
+sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
+
 import numpy as np
-import pvaps
+from virga import pvaps
 from scipy import optimize
-from calc_mie import get_r_grid
-from root_functions import (
+from virga.calc_mie import get_r_grid
+from virga.root_functions import (
     vfall,
     var_vfall,
     vfall_find_root,

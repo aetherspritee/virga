@@ -1,17 +1,22 @@
+import os,sys
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+sys.path.append(os.path.dirname("/home/dsc/master/"))
+sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
+
 import pandas as pd
 import numpy as np
-import os
 from scipy import optimize
-from root_functions import qvs_below_model
-import gas_properties
-import pvaps
+from virga.root_functions import qvs_below_model
+from virga import gas_properties
+from virga import pvaps
 import matplotlib.pyplot as plt
 from bokeh.io import output_notebook
-from direct_mmr_solver import direct_solver
-from justplotit import find_nearest_1d
-from calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie, load_stored_fractal_scat_props
-from layer import layer, layer_fractal
-from fractal_aggregates import Particle
+from virga.direct_mmr_solver import direct_solver
+from virga.justplotit import find_nearest_1d
+from virga.calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie, load_stored_fractal_scat_props
+from virga.layer import layer, layer_fractal
+from virga.fractal_aggregates import Particle
 
 class Atmosphere:
     def __init__(
@@ -538,7 +543,7 @@ def compute_yasf(
 
         radii, _, _ = get_r_grid(rmin, n_radii=nradii)
         # comment out for faster testing
-        # radii = radii[0:1]
+        radii = radii[-2:-1]
 
         particle_properties = Particle(list(radii),particle_props.monomer_size, particle_props.Df, particle_props.kf)
         if mode == "YASF":

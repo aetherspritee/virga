@@ -1,13 +1,18 @@
-#!/usr/bin/env python3
-import os
+import os, sys
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+sys.path.append(os.path.dirname("/home/dsc/master/"))
+sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
+
 import pandas as pd
 import numpy as np
 from scipy import optimize
-import pvaps
-import gas_properties
-from justplotit import plot_format
+from virga import pvaps
+import virga.gas_properties
+from virga.justplotit import plot_format
 
-from root_functions import find_cond_t
+from virga.root_functions import find_cond_t
 
 def get_r_grid_w_max(r_min=1e-8, r_max=5.4239131e-2, n_radii=60):
     """

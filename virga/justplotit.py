@@ -1,3 +1,10 @@
+import os, sys
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+sys.path.append(os.path.dirname("/home/dsc/master/"))
+sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
+
 from bokeh.palettes import viridis, magma
 from bokeh.models import ColumnDataSource, Label, LabelSet, CustomJS
 from bokeh.layouts import column, row, gridplot
@@ -20,7 +27,7 @@ import bokeh.palettes as colpals
 import astropy.units as u
 import numpy as np
 
-import justdoit as pyeddy
+import virga.justdoit as pyeddy
 
 
 def pt(out, with_condensation=True, return_condensation=False, **kwargs):

@@ -1,6 +1,12 @@
+import os,sys
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+sys.path.append(os.path.dirname("/home/dsc/master/"))
+sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
+
 import numpy as np
-import pvaps
-import gas_properties
+from virga import pvaps
+import virga.gas_properties
 from scipy.stats import lognorm
 from scipy.integrate import quad, simps
 from scipy import optimize

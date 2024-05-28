@@ -1,9 +1,10 @@
+
+
 import numpy as np
 pi = np.pi
 import PyMieScatt as ps
 import os
 import pandas as pd
-from jdi_utils import get_r_grid_w_max
 import csv
 import sys
 import os
@@ -12,8 +13,10 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 sys.path.append(os.path.dirname("/home/dsc/master/yasf_testing"))
 sys.path.append(os.path.dirname("/home/dsc/master/"))
+sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
 sys.path.append(os.path.dirname("/home/dsc/master/frameworks/"))
 
+from virga.jdi_utils import get_r_grid_w_max
 
 from YASF.yasfpy.particles import Particles
 from YASF.yasfpy.initial_field import InitialField
@@ -22,7 +25,7 @@ from YASF.yasfpy.solver import Solver
 from YASF.yasfpy.numerics import Numerics
 from YASF.yasfpy.simulation import Simulation
 from YASF.yasfpy.optics import Optics
-from fractal_aggregates import ParticleGenerator, Particle
+from virga.fractal_aggregates import ParticleGenerator, Particle
 from pathlib import Path
 from frameworks.mmf import mmf_parsing
 
@@ -334,7 +337,6 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
         particle_generator = ParticleGenerator(fracval_bin_path = FRACAL_BIN_PATH)
         for r_idx in range(len(radii)):
 
-            print(f"FRAVAL: {properties.Df}, {properties.kf}, {properties.monomer_size}, {properties.N[r_idx]}")
             particle_csv = particle_generator.fracval(r_mon=properties.monomer_size,df=properties.Df,N=properties.N[r_idx],r_agg=radii[r_idx], directory=data_dir,kf=properties.kf)
             refractive_index_table = read_virga_refrinds(gas_name, data_dir)
             refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
