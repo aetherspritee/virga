@@ -543,7 +543,7 @@ def compute_yasf(
 
         radii, _, _ = get_r_grid(rmin, n_radii=nradii)
         # comment out for faster testing
-        radii = radii[-2:-1]
+        # radii = radii[-2:-1]
 
         particle_properties = Particle(list(radii),particle_props.monomer_size, particle_props.Df, particle_props.kf)
         if mode == "YASF":
@@ -831,8 +831,6 @@ def compute(
     # reff = droplet eff radius, ndz = column dens of condensate,
     # qc_path = vertical path of condensate
 
-    print(f"{qext_gas = }")
-    print(f"{qscat_gas = }")
     #   run original eddysed code
     if og_solver:
         # here atmo.param describes the parameterization used for the variable fsed methodology
@@ -1183,21 +1181,22 @@ def calc_optics(
             cqs_gas[ibot+2,:,igas] = cqs_gas[ibot,:,igas]*0.05
 
         # Sum over gases and compute spectral optical depth profile etc
-        for iwave in range(nwave):
-            opd_scat = 0.0
-            opd_ext = 0.0
-            cos_qs = 0.0
-            for igas in range(ngas):
-                opd_scat = opd_scat + scat_gas[iz, iwave, igas]
-                opd_ext = opd_ext + ext_gas[iz, iwave, igas]
-                cos_qs = cos_qs + cqs_gas[iz, iwave, igas]
+        for iz in range(nz):
+            for iwave in range(nwave):
+                opd_scat = 0.0
+                opd_ext = 0.0
+                cos_qs = 0.0
+                for igas in range(ngas):
+                    opd_scat = opd_scat + scat_gas[iz, iwave, igas]
+                    opd_ext = opd_ext + ext_gas[iz, iwave, igas]
+                    cos_qs = cos_qs + cqs_gas[iz, iwave, igas]
 
-                if opd_scat > 0.0:
-                    opd[iz, iwave] = opd_ext
-                    w0[iz, iwave] = opd_scat / opd_ext
-                    # if w0[iz,iwave]>1:
-                    #    w0[iz,iwave]=1.
-                    g0[iz, iwave] = cos_qs / opd_scat
+                    if opd_scat > 0.0:
+                        opd[iz, iwave] = opd_ext
+                        w0[iz, iwave] = opd_scat / opd_ext
+                        # if w0[iz,iwave]>1:
+                        #    w0[iz,iwave]=1.
+                        g0[iz, iwave] = cos_qs / opd_scat
 
     # cumulative optical depths for conservative geometric scatterers
     opd_tot = 0.0

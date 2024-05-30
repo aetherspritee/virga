@@ -1,5 +1,4 @@
-
-
+import pickle
 import numpy as np
 pi = np.pi
 import PyMieScatt as ps
@@ -329,6 +328,7 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
 
     qext = np.zeros((nwave, nradii))
     qscat = np.zeros((nwave, nradii))
+    g0 = np.zeros((nwave, nradii))
     cos_qscat = np.zeros((nwave, nradii))
 
     if mode == "YASF":
@@ -353,13 +353,31 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
         refrinds = np.array([complex(refractive_index_table[i,1],refractive_index_table[i,2]) for i in range(refractive_index_table.shape[0])])
         # refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
         for r_idx in range(len(radii)):
-            # optool uses cm
+            # optool uses µm
             r_mm = radii[r_idx]*1e4
             p = mmf_parsing.run_optool(a=r_mm,a0=properties.monomer_size,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
-            q_ext, q_scat = mmf_parsing.get_efficiencies(p, properties.N[r_idx], properties.rho, Df=properties.Df, kf=properties.kf)
+            q_scat = p.ksca
+            q_ext = p.kext
+            # q_ext, q_scat = mmf_parsing.get_efficiencies(p, properties.N[r_idx], properties.rho, Df=properties.Df, kf=properties.kf)
             qext[:,r_idx] = q_ext
             qscat[:,r_idx] = q_scat
             cos_qscat[:,r_idx] = p.gsca*q_scat
+            g0[:,r_idx] = p.gsca
+
+    # sanity check
+    scat_inp = {}
+    scat_inp["wavelengths"] = wave_in
+    scat_inp["r_mon"] = properties.monomer_size
+    scat_inp["r_agg"] = radii
+    scat_inp["refrinds"] = refrinds
+    scat_inp["Df"] = properties.Df
+    scat_inp["kf"] = properties.kf
+    scat_inp["g0"] = p.gsca
+    scat_inp["qext"] = qext
+    scat_inp["qscat"] = qscat
+
+    with open("SCAT_PROPS_MMF.pickle", "wb") as f:
+        pickle.dump(scat_inp, f)
 
     if store:
         with open(os.path.join(db_name, gas_name + f"_{mode}.mieff"),"a") as f:
