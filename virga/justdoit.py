@@ -16,7 +16,7 @@ from virga.direct_mmr_solver import direct_solver
 from virga.justplotit import find_nearest_1d
 from virga.calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie, load_stored_fractal_scat_props
 from virga.layer import layer, layer_fractal
-from virga.fractal_aggregates import Particle
+from particle_generator.particle_generator import Particle
 
 class Atmosphere:
     def __init__(

@@ -1,3 +1,8 @@
+import os, sys
+sys.path.append(os.path.dirname("/home/dsc/master/"))
+sys.path.append(os.path.dirname("/home/yulivee/Code/master/"))
+sys.path.append(os.path.dirname("/Users/dusc/Code/master/"))
+
 import numpy as np
 import pandas as pd
 import astropy.units as u
@@ -8,7 +13,7 @@ import time
 from bokeh.plotting import show, figure
 from direct_mmr_solver import generate_altitude
 import jdi_utils
-from fractal_aggregates import Particle
+from particle_generator.particle_generator import Particle
 from time import monotonic
 
 #   locate data

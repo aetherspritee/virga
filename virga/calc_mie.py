@@ -24,12 +24,16 @@ from YASF.yasfpy.solver import Solver
 from YASF.yasfpy.numerics import Numerics
 from YASF.yasfpy.simulation import Simulation
 from YASF.yasfpy.optics import Optics
-from virga.fractal_aggregates import ParticleGenerator, Particle
 from pathlib import Path
 from frameworks.mmf import mmf_parsing
+from frameworks.mstm import mstm4
+from particle_generator.particle_generator import ParticleGenerator, Particle
+
+VALID_MODES = ["MMF", "MSTM", "YASF"]
 
 mmf_parsing.OPTOOL_BIN_PATH = "/home/dsc/optool/optool"
 FRACAL_BIN_PATH = "/home/dsc/master/FracVAL/FRACVAL"
+NCORES = 20
 
 def calc_mieff(wave_in, nn,kk, radius, rup, fort_calc_mie=False):
     nradii = len(radius)
@@ -319,7 +323,7 @@ def get_mie(gas, directory):
 
 
 def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: str="YASF", store=False, db_name="/home/dsc/virga-data"):
-    assert (mode == "YASF" or mode == "MMF"), "Only valid modes are 'YASF' and 'MMF'"
+    assert (mode in VALID_MODES), "Only valid modes are 'YASF' and 'MMF'"
 
     radii = properties.radii
     nradii = len(radii)
@@ -336,7 +340,7 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
 
         particle_generator = ParticleGenerator(fracval_bin_path = FRACAL_BIN_PATH)
         for r_idx in range(len(radii)):
-
+            r_mon_
             particle_csv = particle_generator.fracval(r_mon=properties.monomer_size,df=properties.Df,N=properties.N[r_idx],r_agg=radii[r_idx], directory=data_dir,kf=properties.kf)
             refractive_index_table = read_virga_refrinds(gas_name, data_dir)
             refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
@@ -363,6 +367,24 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
             qscat[:,r_idx] = q_scat
             cos_qscat[:,r_idx] = p.gsca*q_scat
             g0[:,r_idx] = p.gsca
+            
+            
+    elif mode == "MSTM":
+        particle_generator = ParticleGenerator(fracval_bin_path = FRACAL_BIN_PATH)
+        for r_idx in range(len(radii)):
+
+            # make sure scaling fits here
+            particle_csv = particle_generator.fracval(r_mon=properties.monomer_size,df=properties.Df,N=properties.N[r_idx],r_agg=radii[r_idx], directory=data_dir,kf=properties.kf)
+            refractive_index_table = read_virga_refrinds(gas_name, data_dir)
+            medium_refractive_index = np.ones_like(wave_in)
+            spheres = pd.read_csv(particle_csv, header=None, names=['x', 'y', 'z', 'r', 'm_idx'])
+            spheres = spheres.to_numpy()
+            output_file = mstm4.run_mstm4(spheres=spheres, refractive_indices=refractive_index_table[0],medium_refractive_index=medium_refractive_index,wavelengths=wave_in,lmax=6,N=NCORES)
+            q_ext, q_scat, _, g = mstm4.parse_results(output_file)
+
+            qext[:,r_idx] = np.array(q_ext)
+            qscat[:,r_idx] = np.array(q_scat)
+            cos_qscat[:,r_idx] = np.array(g)*np.array(q_scat)
 
     # sanity check
     scat_inp = {}
