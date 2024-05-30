@@ -340,7 +340,6 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
 
         particle_generator = ParticleGenerator(fracval_bin_path = FRACAL_BIN_PATH)
         for r_idx in range(len(radii)):
-            r_mon_
             particle_csv = particle_generator.fracval(r_mon=properties.monomer_size,df=properties.Df,N=properties.N[r_idx],r_agg=radii[r_idx], directory=data_dir,kf=properties.kf)
             refractive_index_table = read_virga_refrinds(gas_name, data_dir)
             refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
@@ -372,8 +371,6 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
     elif mode == "MSTM":
         particle_generator = ParticleGenerator(fracval_bin_path = FRACAL_BIN_PATH)
         for r_idx in range(len(radii)):
-
-            # make sure scaling fits here
             particle_csv = particle_generator.fracval(r_mon=properties.monomer_size,df=properties.Df,N=properties.N[r_idx],r_agg=radii[r_idx], directory=data_dir,kf=properties.kf)
             refractive_index_table = read_virga_refrinds(gas_name, data_dir)
             medium_refractive_index = np.ones_like(wave_in)

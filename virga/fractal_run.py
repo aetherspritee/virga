@@ -71,8 +71,7 @@ else:
 #   verify original and new solvers give same mixing ratios
 fig1, ax1 = plt.subplots()
 
-#         µm     cm
-r_mon = 0.01 * 1e-4
+r_mon = 0.01 # µm, as all frameworks use it
 Df = 1.8
 kf = 1.0
 
