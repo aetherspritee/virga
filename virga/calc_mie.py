@@ -356,9 +356,9 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
         refrinds = np.array([complex(refractive_index_table[i,1],refractive_index_table[i,2]) for i in range(refractive_index_table.shape[0])])
         # refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
         for r_idx in range(len(radii)):
-            # optool uses µm
-            r_mm = radii[r_idx]*1e4
-            p = mmf_parsing.run_optool(a=r_mm,a0=properties.monomer_size,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
+            # r_agg != a, use formula provided in optool manual
+            a = (properties.N[r_idx]*properties.monomer_size)**(1/3)
+            p = mmf_parsing.run_optool(a=a,a0=properties.monomer_size,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
             q_scat = p.ksca
             q_ext = p.kext
             # q_ext, q_scat = mmf_parsing.get_efficiencies(p, properties.N[r_idx], properties.rho, Df=properties.Df, kf=properties.kf)
