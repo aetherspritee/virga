@@ -1142,6 +1142,8 @@ def calc_optics(
                     # print(f"{arg1 = }")
                     arg2 = -np.log(rr / rg[iz, igas]) ** 2 / (2 * np.log(rsig) ** 2)
                     # print(f"{arg2 = }")
+                    # TODO: have a look at this, whats the value of pir2ndz?
+                    # if its tiny for the very large particles we can limit the number of required radii to calc
                     pir2ndz = norm * PI * rr * arg1 * np.exp(arg2) # rr*pi* PDF, what is this?
                     for iwave in range(nwave):
                         scat_gas[iz, iwave, igas] = (
