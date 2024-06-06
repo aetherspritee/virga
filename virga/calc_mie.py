@@ -31,7 +31,7 @@ from particle_generator.particle_generator import ParticleGenerator, Particle
 
 VALID_MODES = ["MMF", "MSTM", "YASF"]
 
-mmf_parsing.OPTOOL_BIN_PATH = "/home/dsc/optool/optool"
+mmf_parsing.OPTOOL_BIN_PATH = "/home/dsc/master/optool/optool"
 FRACAL_BIN_PATH = "/home/dsc/master/FracVAL/FRACVAL"
 NCORES = 20
 
@@ -356,8 +356,12 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
         refrinds = np.array([complex(refractive_index_table[i,1],refractive_index_table[i,2]) for i in range(refractive_index_table.shape[0])])
         # refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
         for r_idx in range(len(radii)):
+            print(f"CURRENT RADIUS: {radii[r_idx]}")
+            print(f"CURRENT N: {properties.N[r_idx]}")
+            print(f"CURRENT R0: {properties.monomer_size}")
             # r_agg != a, use formula provided in optool manual
-            a = (properties.N[r_idx]*properties.monomer_size)**(1/3)
+            a = (properties.N[r_idx]*properties.monomer_size**3)**(1/3)
+            print(f"CALCULATED a: {a}")
             p = mmf_parsing.run_optool(a=a,a0=properties.monomer_size,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
             q_scat = p.ksca
             q_ext = p.kext
