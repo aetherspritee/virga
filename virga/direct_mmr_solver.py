@@ -10,10 +10,10 @@ from scipy.interpolate import UnivariateSpline, interp1d
 from scipy import optimize
 import numpy as np
 import pandas as pd
-from virga import pvaps
-from virga.root_functions import var_vfall, vfall_find_root, vfall_find_root_fractal, find_rg, moment, solve_force_balance
+from virga.virga import pvaps
+from virga.virga.root_functions import var_vfall, vfall_find_root, vfall_find_root_fractal, find_rg, moment, solve_force_balance
 import time
-import virga.justdoit as jdi
+import virga.virga.justdoit as jdi
 
 
 def direct_solver(

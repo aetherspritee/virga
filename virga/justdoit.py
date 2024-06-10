@@ -7,15 +7,15 @@ sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
 import pandas as pd
 import numpy as np
 from scipy import optimize
-from virga.root_functions import qvs_below_model
-from virga import gas_properties
-from virga import pvaps
+from virga.virga.root_functions import qvs_below_model
+from virga.virga import gas_properties
+from virga.virga import pvaps
 import matplotlib.pyplot as plt
 from bokeh.io import output_notebook
-from virga.direct_mmr_solver import direct_solver
-from virga.justplotit import find_nearest_1d
-from virga.calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie, load_stored_fractal_scat_props
-from virga.layer import layer, layer_fractal
+from virga.virga.direct_mmr_solver import direct_solver
+from virga.virga.justplotit import find_nearest_1d
+from virga.virga.calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie, load_stored_fractal_scat_props
+from virga.virga.layer import layer, layer_fractal
 from particle_generator.particle_generator import Particle
 
 class Atmosphere:

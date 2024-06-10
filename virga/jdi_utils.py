@@ -8,11 +8,11 @@ sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
 import pandas as pd
 import numpy as np
 from scipy import optimize
-from virga import pvaps
-import virga.gas_properties
-from virga.justplotit import plot_format
+from virga.virga import pvaps
+import virga.virga.gas_properties
+from virga.virga.justplotit import plot_format
 
-from virga.root_functions import find_cond_t
+from virga.virga.root_functions import find_cond_t
 
 def get_r_grid_w_max(r_min=1e-8, r_max=5.4239131e-2, n_radii=60):
     """
