@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname("/home/dsc/master/"))
 sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
 sys.path.append(os.path.dirname("/home/dsc/master/frameworks/"))
 
-from virga.virga.jdi_utils import get_r_grid_w_max
+from virga.jdi_utils import get_r_grid_w_max
 
 from YASF.yasfpy.particles import Particles
 from YASF.yasfpy.initial_field import InitialField

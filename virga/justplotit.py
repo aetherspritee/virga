@@ -27,7 +27,7 @@ import bokeh.palettes as colpals
 import astropy.units as u
 import numpy as np
 
-import virga.virga.justdoit as pyeddy
+import virga.justdoit as pyeddy
 
 
 def pt(out, with_condensation=True, return_condensation=False, **kwargs):

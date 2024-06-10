@@ -5,10 +5,10 @@ sys.path.append(os.path.dirname("/home/dsc/master/"))
 sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
 
 import numpy as np
-from virga.virga import pvaps
+from virga import pvaps
 from scipy import optimize
-from virga.virga.calc_mie import get_r_grid
-from virga.virga.root_functions import (
+from virga.calc_mie import get_r_grid
+from virga.root_functions import (
     vfall,
     var_vfall,
     vfall_find_root,

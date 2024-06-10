@@ -7,15 +7,15 @@ sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
 import pandas as pd
 import numpy as np
 from scipy import optimize
-from virga.virga.root_functions import qvs_below_model
-from virga.virga import gas_properties
-from virga.virga import pvaps
+from virga.root_functions import qvs_below_model
+from virga import gas_properties
+from virga import pvaps
 import matplotlib.pyplot as plt
 from bokeh.io import output_notebook
-from virga.virga.direct_mmr_solver import direct_solver
-from virga.virga.justplotit import find_nearest_1d
-from virga.virga.calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie, load_stored_fractal_scat_props
-from virga.virga.layer import layer, layer_fractal
+from virga.direct_mmr_solver import direct_solver
+from virga.justplotit import find_nearest_1d
+from virga.calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie, load_stored_fractal_scat_props
+from virga.layer import layer, layer_fractal
 from particle_generator.particle_generator import Particle
 
 class Atmosphere:
@@ -1106,6 +1106,9 @@ def calc_optics(
     g0 = np.zeros((nz, nwave))
     warning = ""
     for iz in range(nz):
+        print("############################")
+        print(f"{iz = }")
+        print("############################")
         for igas in range(ngas):
             # Optical depth for conservative geometric scatterers
             if ndz[iz, igas] > 0:
@@ -1137,14 +1140,15 @@ def calc_optics(
                 # @dusc: this is some sort of integration over the individual layers using the particle distributions
                 # and number densities of particles
                 for irad in range(nrad):
+                    print("==================")
+                    print(f"{radius[irad] = }")
                     rr = radius[irad]
                     arg1 = dr[irad] / (np.sqrt(2.0 * PI) * np.log(rsig))
                     # print(f"{arg1 = }")
                     arg2 = -np.log(rr / rg[iz, igas]) ** 2 / (2 * np.log(rsig) ** 2)
                     # print(f"{arg2 = }")
-                    # TODO: have a look at this, whats the value of pir2ndz?
-                    # if its tiny for the very large particles we can limit the number of required radii to calc
                     pir2ndz = norm * PI * rr * arg1 * np.exp(arg2) # rr*pi* PDF, what is this?
+                    print(f"{pir2ndz = }")
                     for iwave in range(nwave):
                         scat_gas[iz, iwave, igas] = (
                             scat_gas[iz, iwave, igas]
@@ -1157,8 +1161,10 @@ def calc_optics(
                             cqs_gas[iz, iwave, igas]
                             + cos_qscat[iwave, irad, igas] * pir2ndz
                         )
-
-                    # TO DO ADD IN CLOUD SUBLAYER KLUGE LATER
+                    print(f"{qext[0,irad,igas]*pir2ndz = }")
+                    print(f"{qscat[0,irad,igas]*pir2ndz = }")
+                    print("==================")
+                        # TO DO ADD IN CLOUD SUBLAYER KLUGE LATER
 
     for igas in range(ngas):
         for iz in range(nz-1,-1,-1):
