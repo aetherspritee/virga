@@ -16,6 +16,7 @@ from virga.direct_mmr_solver import direct_solver
 from virga.calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie, load_stored_fractal_scat_props
 from virga.layer import layer, layer_fractal
 from particle_generator.particle_generator import Particle
+import pickle
 
 class Atmosphere:
     def __init__(
@@ -486,7 +487,7 @@ class Atmosphere:
         return run
     
     def vfall(self):
-        run = compute_vfall(self)
+        run = compute_vfall(self,directory=directory, particle_props=Particle())
         return run
 
 
@@ -1971,7 +1972,7 @@ def compute_vfall(atmo: Atmosphere,particle_props: Particle, directory):
         particle_properties = Particle(list(radii),particle_props.monomer_size, particle_props.Df, particle_props.kf)
 
     z_cld = None  # temporary fix
-
+    print("going in")
     qc, qt, rg, reff, ndz, qc_path, mixl, z_cld = eddysed_fractal(
         atmo.t_level,
         atmo.p_level,
@@ -2008,3 +2009,10 @@ def compute_vfall(atmo: Atmosphere,particle_props: Particle, directory):
         Df=particle_properties.Df,
         kf=particle_properties.kf,
     )
+
+    print("saving data")
+    data = {
+     "qc": qc,"qt": qt,"rg": rg,"reff": reff,"ndz": ndz,"qc_path": qc_path,"mixl": mixl,"z_cld": z_cld
+    }
+    with open("results/vfall_data.pkl","wb") as f:
+        pickle.dump(data,f)
