@@ -13,7 +13,6 @@ from virga import pvaps
 import matplotlib.pyplot as plt
 from bokeh.io import output_notebook
 from virga.direct_mmr_solver import direct_solver
-from virga.justplotit import find_nearest_1d
 from virga.calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie, load_stored_fractal_scat_props
 from virga.layer import layer, layer_fractal
 from particle_generator.particle_generator import Particle
@@ -484,6 +483,10 @@ class Atmosphere:
 
     def compute_yasf(self):
         run = compute_yasf(self)
+        return run
+    
+    def vfall(self):
+        run = compute_vfall(self)
         return run
 
 
@@ -1106,9 +1109,6 @@ def calc_optics(
     g0 = np.zeros((nz, nwave))
     warning = ""
     for iz in range(nz):
-        print("############################")
-        print(f"{iz = }")
-        print("############################")
         for igas in range(ngas):
             # Optical depth for conservative geometric scatterers
             if ndz[iz, igas] > 0:
@@ -1129,8 +1129,12 @@ def calc_optics(
                 norm = 0.0
                 for irad in range(nrad):
                     rr = radius[irad]
+                    print(f"{dr[irad] = }")
+                    print(f"{rr = }")
                     arg1 = dr[irad] / (np.sqrt(2.0 * PI) * rr * np.log(rsig))
+                    print(f"{arg1  =}")
                     arg2 = -np.log(rr / rg[iz, igas]) ** 2 / (2 * np.log(rsig) ** 2) # lognormal dist
+                    print(f"{arg2  =}")
                     norm = norm + arg1 * np.exp(arg2)
                     # print (rr, rg[iz,igas],rsig,arg1,arg2)
 
@@ -1154,6 +1158,7 @@ def calc_optics(
                             scat_gas[iz, iwave, igas]
                             + qscat[iwave, irad, igas] * pir2ndz
                         )
+                        # NOTE: ext_gas is used for the opd variable later
                         ext_gas[iz, iwave, igas] = (
                             ext_gas[iz, iwave, igas] + qext[iwave, irad, igas] * pir2ndz
                         )
@@ -1179,6 +1184,7 @@ def calc_optics(
             print("Not doing sublayer as cloud deck at the bottom of pressure grid")
 
         else:
+            # this is just the virtual layer under the lowest considered pressure line
             opd_layer[ibot+1,igas] = opd_layer[ibot,igas]*0.1
             scat_gas[ibot+1,:,igas] = scat_gas[ibot,:,igas]*0.1
             ext_gas[ibot+1,:,igas] = ext_gas[ibot,:,igas]*0.1
@@ -1920,3 +1926,85 @@ def calc_optics_user_r_dist(wave_in, ndz, radius, radius_unit, r_distribution, q
                             g0[iwave] = cos_qs / opd_scat
 
     return opd, w0, g0, wavenumber_grid
+
+def find_nearest_1d(array, value):
+    # small program to find the nearest neighbor in a matrix
+    ar, iar, ic = np.unique(array, return_index=True, return_counts=True)
+    idx = (np.abs(ar - value)).argmin(axis=0)
+    if ic[idx] > 1:
+        idx = iar[idx] + (ic[idx] - 1)
+    else:
+        idx = iar[idx]
+    return idx
+
+
+def compute_vfall(atmo: Atmosphere,particle_props: Particle, directory):
+    results = {}
+
+    mmw = atmo.mmw
+    mh = atmo.mh
+    condensibles = atmo.condensibles
+
+    ngas = len(condensibles)
+
+    gas_mw = np.zeros(ngas)
+    gas_mmr = np.zeros(ngas)
+    rho_p = np.zeros(ngas)
+
+    # scale-height for fsed taken at Teff (default: temp at 1bar)
+    H = atmo.r_atmos * atmo.Teff / atmo.g
+
+    fsed_in = atmo.fsed
+
+    assert directory != None , "Need a directory for now"
+    rmin, nradii = get_radii_tentatively(directory, condensibles[0])
+
+    results["condensibles"] = condensibles
+    for i, igas in zip(range(ngas), condensibles):
+        run_gas = getattr(gas_properties, igas)
+        gas_mw[i], gas_mmr[i], rho_p[i] = run_gas(mmw, mh=mh, gas_mmr=atmo.gas_mmr[igas])
+
+        radii, _, _ = get_r_grid(rmin, n_radii=nradii)
+        # comment out for faster testing
+        # radii = radii[-2:-1]
+
+        particle_properties = Particle(list(radii),particle_props.monomer_size, particle_props.Df, particle_props.kf)
+
+    z_cld = None  # temporary fix
+
+    qc, qt, rg, reff, ndz, qc_path, mixl, z_cld = eddysed_fractal(
+        atmo.t_level,
+        atmo.p_level,
+        atmo.t_layer,
+        atmo.p_layer,
+        condensibles,
+        gas_mw,
+        gas_mmr,
+        rho_p,
+        mmw,
+        atmo.g,
+        atmo.kz,
+        atmo.mixl,
+        fsed_in,
+        atmo.b,
+        atmo.eps,
+        atmo.scale_h,
+        atmo.z_top,
+        atmo.z_alpha,
+        min(atmo.z),
+        atmo.param,
+        mh,
+        atmo.sig,
+        rmin,
+        nradii,
+        atmo.d_molecule,
+        atmo.eps_k,
+        atmo.c_p_factor,
+        og_vfall=True,
+        supsat=atmo.supsat,
+        verbose=atmo.verbose,
+        do_virtual=True, # TODO: make this available in function as arg
+        r_mon=particle_properties.monomer_size,
+        Df=particle_properties.Df,
+        kf=particle_properties.kf,
+    )
