@@ -205,6 +205,12 @@ def hot_jupiter():
     )
     return df
 
+def picaso_hot_jupiter(ref_data_dir = "/home/dsc/picaso/reference/"):
+    ref_file =  os.path.join(ref_data_dir, 'base_cases','HJ.pt')
+
+    df = pd.read_csv(ref_file,delim_whitespace=True)
+
+    return df[["pressure", "temperature", "kz"]]
 
 def brown_dwarf():
     directory = os.path.join(
