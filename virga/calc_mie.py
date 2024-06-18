@@ -14,6 +14,7 @@ sys.path.append(os.path.dirname("/home/dsc/master/yasf_testing"))
 sys.path.append(os.path.dirname("/home/dsc/master/"))
 sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
 sys.path.append(os.path.dirname("/home/dsc/master/frameworks/"))
+sys.path.append(os.path.dirname("/Users/dusc/Code/master/"))
 
 from virga.jdi_utils import get_r_grid_w_max
 

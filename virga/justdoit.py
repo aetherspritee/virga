@@ -295,6 +295,7 @@ class Atmosphere:
                     )
             kz_level = np.array(df["kz"])
             self.kz = 0.5 * (kz_level[1:] + kz_level[0:-1])
+            print(self.kz)
             self.chf = None
 
         #   option 2) the user wants a constant value
@@ -486,9 +487,12 @@ class Atmosphere:
         run = compute_yasf(self)
         return run
     
-    def vfall(self):
-        run = compute_vfall(self,directory=directory, particle_props=Particle())
-        return run
+    def vfall(self, directory, fractal=True):
+        if fractal:
+            run = compute_vfall_fractal(self,directory=directory, particle_props=Particle())
+            return run
+        else:
+            run = compute_vfall(self, directory=directory)
 
 
 def compute_yasf(
@@ -583,7 +587,7 @@ def compute_yasf(
 
     z_cld = None  # temporary fix
 
-    qc, qt, rg, reff, ndz, qc_path, mixl, z_cld = eddysed_fractal(
+    qc, qt, rg, reff, ndz, qc_path, mixl, z_cld, vfalls = eddysed_fractal(
         atmo.t_level,
         atmo.p_level,
         atmo.t_layer,
@@ -1441,6 +1445,7 @@ def eddysed_fractal(
                         q_below,
                         z_cld,
                         fsed_layer_v,
+                        vfall
                     ) = layer_fractal(
                         igas,
                         rho_p[i],
@@ -1939,7 +1944,8 @@ def find_nearest_1d(array, value):
     return idx
 
 
-def compute_vfall(atmo: Atmosphere,particle_props: Particle, directory):
+def compute_vfall_fractal(atmo: Atmosphere,particle_props: Particle, directory):
+    directory = "/Users/dusc/virga-data/"
     results = {}
 
     mmw = atmo.mmw
@@ -1951,6 +1957,7 @@ def compute_vfall(atmo: Atmosphere,particle_props: Particle, directory):
     gas_mw = np.zeros(ngas)
     gas_mmr = np.zeros(ngas)
     rho_p = np.zeros(ngas)
+    print(f"{gas_mmr = }")
 
     # scale-height for fsed taken at Teff (default: temp at 1bar)
     H = atmo.r_atmos * atmo.Teff / atmo.g
@@ -2009,10 +2016,160 @@ def compute_vfall(atmo: Atmosphere,particle_props: Particle, directory):
         Df=particle_properties.Df,
         kf=particle_properties.kf,
     )
+    pres_out = atmo.p_layer
+    temp_out = atmo.t_layer
+    z_out = atmo.z
 
-    print("saving data")
-    data = {
-     "qc": qc,"qt": qt,"rg": rg,"reff": reff,"ndz": ndz,"qc_path": qc_path,"mixl": mixl,"z_cld": z_cld
-    }
-    with open("results/vfall_data.pkl","wb") as f:
-        pickle.dump(data,f)
+    opd = np.zeros(())
+    g0 = np.zeros(())
+    w0 = np.zeros(())
+    opd_gas = np.zeros(())
+    wave = np.zeros((3,3))
+    fsed = atmo.fsed
+
+    res = create_dict(
+        qc,
+        qt,
+        rg,
+        reff,
+        ndz,
+        opd,
+        w0,
+        g0,
+        opd_gas,
+        wave,
+        pres_out,
+        temp_out,
+        condensibles,
+        mh,
+        mmw,
+        fsed,
+        atmo.sig,
+        nradii,
+        rmin,
+        z_out,
+        atmo.dz_layer,
+        mixl,
+        atmo.kz,
+        atmo.scale_h,
+        z_cld,
+    )
+    return res
+
+
+def compute_vfall(atmo, directory):
+    mmw = atmo.mmw
+    mh = atmo.mh
+    condensibles = atmo.condensibles
+
+    ngas = len(condensibles)
+
+    gas_mw = np.zeros(ngas)
+    gas_mmr = np.zeros(ngas)
+    rho_p = np.zeros(ngas)
+
+    # scale-height for fsed taken at Teff (default: temp at 1bar)
+    H = atmo.r_atmos * atmo.Teff / atmo.g
+
+    #### First we need to either grab or compute Mie coefficients ####
+    print(ngas)
+    print(condensibles)
+    for i, igas in zip(range(ngas), condensibles):
+        run_gas = getattr(gas_properties, igas)
+        gas_mw[i], gas_mmr[i], rho_p[i] = run_gas(mmw, mh=mh, gas_mmr=atmo.gas_mmr[igas])
+        if i == 0:
+            radius, rup, dr = get_r_grid(r_min=1e-5, n_radii=60)
+            nradii = len(radius)
+            rmin = np.min(radius)
+
+        # add to master matrix that contains the per gas Mie stuff
+
+    # Next, calculate size and concentration
+    # of condensates in balance between eddy diffusion and sedimentation
+
+    # qc = condensate mixing ratio, qt = condensate+gas mr, rg = mean radius,
+    # reff = droplet eff radius, ndz = column dens of condensate,
+    # qc_path = vertical path of condensate
+
+    # here atmo.param describes the parameterization used for the variable fsed methodology
+    if atmo.param == "exp":
+        # the formalism of this is detailed in Rooney et al. 2021
+        atmo.b = 6 * atmo.b * H  # using constant scale-height in fsed
+        fsed_in = atmo.fsed - atmo.eps
+    elif atmo.param == "const":
+        fsed_in = atmo.fsed
+
+    # @dusc: FeelsGoodMan Clap
+    og_vfall=True
+    do_virtual=True
+    qc, qt, rg, reff, ndz, qc_path, mixl, z_cld = eddysed(
+        atmo.t_level,
+        atmo.p_level,
+        atmo.t_layer,
+        atmo.p_layer,
+        condensibles,
+        gas_mw,
+        gas_mmr,
+        rho_p,
+        mmw,
+        atmo.g,
+        atmo.kz,
+        atmo.mixl,
+        fsed_in,
+        atmo.b,
+        atmo.eps,
+        atmo.scale_h,
+        atmo.z_top,
+        atmo.z_alpha,
+        min(atmo.z),
+        atmo.param,
+        mh,
+        atmo.sig,
+        rmin,
+        nradii,
+        atmo.d_molecule,
+        atmo.eps_k,
+        atmo.c_p_factor,
+        og_vfall,
+        supsat=atmo.supsat,
+        verbose=atmo.verbose,
+        do_virtual=do_virtual,
+    )
+    pres_out = atmo.p_layer
+    temp_out = atmo.t_layer
+    z_out = atmo.z
+
+    opd = np.zeros(())
+    g0 = np.zeros(())
+    w0 = np.zeros(())
+    opd_gas = np.zeros(())
+    wave = np.zeros((3,3))
+    fsed = atmo.fsed
+
+    return create_dict(
+        qc,
+        qt,
+        rg,
+        reff,
+        ndz,
+        opd,
+        w0,
+        g0,
+        opd_gas,
+        wave,
+        pres_out,
+        temp_out,
+        condensibles,
+        mh,
+        mmw,
+        fsed,
+        atmo.sig,
+        nradii,
+        rmin,
+        z_out,
+        atmo.dz_layer,
+        mixl,
+        atmo.kz,
+        atmo.scale_h,
+        z_cld,
+    )

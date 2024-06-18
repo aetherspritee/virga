@@ -10,7 +10,6 @@ import numpy as np
 from scipy import optimize
 from virga import pvaps
 import virga.gas_properties
-from virga.justplotit import plot_format
 
 from virga.root_functions import find_cond_t
 
@@ -373,3 +372,16 @@ def available():
     pvs = [i for i in dir(pvaps) if i != "np" and "_" not in i]
     gas_p = [i for i in dir(gas_properties) if i != "np" and "_" not in i]
     return list(np.intersect1d(gas_p, pvs))
+
+def plot_format(df):
+    """Function to reformat plots"""
+    df.xaxis.axis_label_text_font = "times"
+    df.yaxis.axis_label_text_font = "times"
+    df.xaxis.major_label_text_font_size = "14pt"
+    df.yaxis.major_label_text_font_size = "14pt"
+    df.xaxis.axis_label_text_font_size = "14pt"
+    df.yaxis.axis_label_text_font_size = "14pt"
+    df.xaxis.major_label_text_font = "times"
+    df.yaxis.major_label_text_font = "times"
+    df.xaxis.axis_label_text_font_style = "bold"
+    df.yaxis.axis_label_text_font_style = "bold"

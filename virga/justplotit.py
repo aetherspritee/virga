@@ -1,5 +1,6 @@
 import os, sys
 
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 sys.path.append(os.path.dirname("/home/dsc/master/"))
@@ -17,6 +18,7 @@ from bokeh.models import (
     LogColorMapper,
     Legend,
 )
+from virga import jdi_utils
 from bokeh.palettes import magma as colfun1
 from bokeh.palettes import Colorblind8
 from bokeh.palettes import viridis as colfun2
@@ -241,6 +243,7 @@ def radii(
 
         # add to r_g for that plot
         df_r_g["average"] = [pressure[nl]] * len(pressure)
+        print(f"{df_r_g['average'] = }")
         df_r_g["horizontal"] = np.linspace(
             np.amin(r_g[r_g > 0]), np.amax(r_g), len(pressure)
         )
@@ -542,7 +545,7 @@ def all_optics(out):
     Three bokeh plots with the single scattering, optical depth, and assymetry maps
     """
     # get into DataFrame format
-    dat01 = pyeddy.picaso_format(
+    dat01 = jdi_utils.picaso_format(
         out["opd_per_layer"], out["single_scattering"], out["asymmetry"]
     )
 

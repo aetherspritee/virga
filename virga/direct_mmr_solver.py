@@ -13,7 +13,7 @@ import pandas as pd
 from virga import pvaps
 from virga.root_functions import var_vfall, vfall_find_root, vfall_find_root_fractal, find_rg, moment, solve_force_balance
 import time
-import virga.justdoit as jdi
+from virga.calc_mie import get_r_grid
 
 
 def direct_solver(
@@ -135,7 +135,7 @@ def direct_solver(
     # perform calculation on refined TP profile but output values corresponding to initial profile
     for i, igas in zip(range(ngas), condensibles):
         gas_name = igas
-        qc, qt, rg, reff, ndz, dz, qc_path[i], mixl = calc_qc(
+        qc, qt, rg, reff, ndz, dz, qc_path[i], mixl, _ = calc_qc(
             z,
             P_z,
             T_z,
@@ -481,7 +481,7 @@ def fractal_calc_qc(
             def pow_law(r, alpha):
                 return np.log(w_convect(T, P, k)) + alpha * np.log(r / rw[i])
 
-            r_, rup, dr = jdi.get_r_grid(r_min=rmin, n_radii=nrad)
+            r_, rup, dr = get_r_grid(r_min=rmin, n_radii=nrad)
             vfall_temp = []
             for j in range(len(r_)):
                 if og_vfall:
@@ -877,7 +877,7 @@ def calc_qc(
             def pow_law(r, alpha):
                 return np.log(w_convect(T, P, k)) + alpha * np.log(r / rw[i])
 
-            r_, rup, dr = jdi.get_r_grid(r_min=rmin, n_radii=nrad)
+            r_, rup, dr = get_r_grid(r_min=rmin, n_radii=nrad)
             vfall_temp = []
             for j in range(len(r_)):
                 if og_vfall:

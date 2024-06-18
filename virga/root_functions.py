@@ -133,6 +133,7 @@ def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
         density of particle (g/cm^3)
     """
 
+    # print(f"{r = }, {grav = }, {mw_atmos =}, {mfp = }, {visc = }, {t = }, {p = }, {rhop = }")
     # the drag coefficient for a reynolds number of 1000
     # which is appropriate for oblate spheroids
     # Fig. 10-36 in Pruppacher & Klett 1978

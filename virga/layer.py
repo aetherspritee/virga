@@ -625,7 +625,7 @@ def calc_qc(
             / (4 * np.pi * rho_p * rg_layer**3)
             * np.exp(-9 * lnsig2)
         )
-
+        # print(f"{vfall_temp = }")
     return qt_top, qc_layer, qt_layer, rg_layer, reff_layer, ndz_layer, z_cld, fsed_mid
 
 
