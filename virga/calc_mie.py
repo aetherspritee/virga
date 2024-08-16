@@ -404,9 +404,9 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
         pickle.dump(scat_inp, f)
 
     if store:
-        with open(os.path.join(db_name, gas_name + f"_{mode}.mieff"),"a") as f:
+        with open(os.path.join(db_name, gas_name + f"_kf_{properties.kf}_df_{properties.Df}_rmon_{properties.monomer_size}_{mode}.mieff"),"a") as f:
             pass
-        with open(os.path.join(db_name, gas_name + f"_{mode}.mieff"),"w") as f:
+        with open(os.path.join(db_name, gas_name + f"_kf_{properties.kf}_df_{properties.Df}_rmon_{properties.monomer_size}_{mode}.mieff"),"w") as f:
             writer = csv.writer(f, delimiter =' ')
             writer.writerow([nwave, len(radii)])
             for r in range(len(radii)):
