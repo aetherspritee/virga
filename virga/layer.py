@@ -1124,7 +1124,7 @@ def calc_qc_fractal(
 
         #   range of particle radii to search (cm)
         # FIXME: im not sure this is a smart idea, but i think its fine
-        rlo = 10*r_mon
+        rlo = 10*r_mon*1e3
         rhi = 10.0
 
         #   precision of vfall solution (cm/s)
