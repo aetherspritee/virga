@@ -5,7 +5,9 @@ sys.path.append(os.path.dirname("/home/dsc/master/"))
 sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
 
 import numpy as np
+import json
 from virga import pvaps
+from pathlib import Path
 from scipy import optimize
 from virga.calc_mie import get_r_grid
 from virga.root_functions import (
@@ -823,6 +825,7 @@ def layer_fractal(
         # SUBALYER
         dp_sub = dp_layer / nsub
 
+        layer_counter = 0
         for isub in range(nsub):
             qt_below = qt_bot_sub
             p_top_sub = p_bot_sub - dp_sub
@@ -875,7 +878,9 @@ def layer_fractal(
                 r_mon=r_mon,
                 Df=Df,
                 kf=kf,
+                layer_num=layer_counter
             )
+            layer_counter += 1
 
             #   vertical sums
             qc_layer = qc_layer + qc_sub * dp_sub / gravity
@@ -967,6 +972,7 @@ def calc_qc_fractal(
     r_mon=0.01,
     Df=1.8,
     kf=1.0,
+    layer_num = -1
 ):
     """
     Calculate condensate optical depth and effective radius for a layer,
@@ -1218,7 +1224,20 @@ def calc_qc_fractal(
                         vlo = vlo / 10
                         vhi = vhi * 10
 
-        # TODO: CHECK ALL OF THIS!
+                        
+        vfall_file = Path("vfall_info.json")
+        vfall_data = {"layer0": {"radii": r_, "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}}
+        if not vfall_file.is_file():
+            with open(vfall_file, "a") as f:
+                json.dump(vfall_data,f)
+        
+        else:
+            with open(vfall_file, "r") as f:
+                vfall_data = json.load(f)
+            
+        vfall_data[f"layer{layer_num}"] =  {"radii": r_, "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}
+        with open("vfall_info.json", "w") as f:
+            json.dump(vfall_data,f)
         pars, cov = optimize.curve_fit(
             f=pow_law,
             xdata=r_,
