@@ -587,7 +587,7 @@ def compute_yasf(
 
     z_cld = None  # temporary fix
 
-    qc, qt, rg, reff, ndz, qc_path, mixl, z_cld, vfalls = eddysed_fractal(
+    qc, qt, rg, reff, ndz, qc_path, mixl, z_cld = eddysed_fractal(
         atmo.t_level,
         atmo.p_level,
         atmo.t_layer,
@@ -1445,7 +1445,6 @@ def eddysed_fractal(
                         q_below,
                         z_cld,
                         fsed_layer_v,
-                        vfall
                     ) = layer_fractal(
                         igas,
                         rho_p[i],
