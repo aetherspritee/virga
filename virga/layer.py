@@ -603,7 +603,7 @@ def calc_qc(
                         vhi = vhi * 10
 
         vfall_file = Path("vfall_info.json")
-        vfall_data = {"layer0": {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p}}
+        vfall_data = {"layer0": {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "vfall": vfall_temp}}
         if not vfall_file.is_file():
             with open(vfall_file, "w") as f:
                 json.dump(vfall_data,f)
@@ -613,7 +613,7 @@ def calc_qc(
                 vfall_data = json.load(f)
             
         # vfall_data[f"layer{layer_num}"] =  {"radii": r_, "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}
-        vfall_data[f"layer{layer_num}"] = {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p}
+        vfall_data[f"layer{layer_num}"] = {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "vfall": vfall_temp}
         with open(vfall_file, "w") as f:
             json.dump(vfall_data,f)
 
@@ -1247,7 +1247,7 @@ def calc_qc_fractal(
 
                         
         vfall_file = Path("fractal_vfall_info.json")
-        vfall_data = {"layer0": {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}}
+        vfall_data = {"layer0": {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf, "vfall": vfall_temp}}
         if not vfall_file.is_file():
             with open(vfall_file, "w") as f:
                 json.dump(vfall_data,f)
@@ -1257,7 +1257,7 @@ def calc_qc_fractal(
                 vfall_data = json.load(f)
             
         # vfall_data[f"layer{layer_num}"] =  {"radii": r_, "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}
-        vfall_data[f"layer{layer_num}"] = {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}
+        vfall_data[f"layer{layer_num}"] = {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf, "vfall": vfall_temp}
         #print(f"{layer_num = }")
         #print(f"{vfall_data = }")
         #time.sleep(1)
