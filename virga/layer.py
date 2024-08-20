@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
 
 import numpy as np
 import json
+import time
 from virga import pvaps
 from pathlib import Path
 from scipy import optimize
@@ -52,6 +53,7 @@ def layer(
     c_p_factor,
     og_vfall,
     z_cld,
+    layer_num=-1
 ):
     """
     Calculate layer condensate properties by iterating on optical depth
@@ -210,7 +212,6 @@ def layer(
         # SUBALYER
         dp_sub = dp_layer / nsub
 
-        layer_counter = 0
         for isub in range(nsub):
             qt_below = qt_bot_sub
             p_top_sub = p_bot_sub - dp_sub
@@ -260,9 +261,12 @@ def layer(
                 nrad,
                 og_vfall,
                 z_cld,
-                layer_counter
+                layer_num
             )
-            layer_counter += 1
+            print("########################")
+            print(f"{layer_num = }")
+            print("########################")
+            # time.sleep(2)
             #   vertical sums
             qc_layer = qc_layer + qc_sub * dp_sub / gravity
             qt_layer = qt_layer + qt_sub * dp_sub / gravity
@@ -599,14 +603,7 @@ def calc_qc(
                         vhi = vhi * 10
 
         vfall_file = Path("fractal_vfall_info.json")
-        print(f"{gravity = }")
-        print(f"{mfp = }")
-        print(f"{mw_atmos = }")
-        print(f"{visc = }")
-        print(f"{t_layer = }")
-        print(f"{p_layer = }")
-        print(f"{rho_p = }")
-        vfall_data = {"layer0": {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}}
+        vfall_data = {"layer0": {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p}}
         if not vfall_file.is_file():
             with open(vfall_file, "w") as f:
                 json.dump(vfall_data,f)
@@ -616,8 +613,8 @@ def calc_qc(
                 vfall_data = json.load(f)
             
         # vfall_data[f"layer{layer_num}"] =  {"radii": r_, "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}
-        vfall_data[f"layer{layer_num}"] = {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}
-        with open("vfall_info.json", "w") as f:
+        vfall_data[f"layer{layer_num}"] = {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p}
+        with open(vfall_file, "w") as f:
             json.dump(vfall_data,f)
 
         pars, cov = optimize.curve_fit(

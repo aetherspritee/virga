@@ -282,7 +282,7 @@ def get_mie(gas, directory):
     df = pd.read_csv(
         os.path.join(directory, gas + ".mieff"),
         names=["wave", "qscat", "qext", "cos_qscat"],
-        sep='\+s',
+        sep=' ',
     )
 
     nwave = int(df.iloc[0, 0])

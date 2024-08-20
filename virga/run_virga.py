@@ -60,10 +60,8 @@ else:
     mean_molecular_weight = 2.2  # atmospheric mean molecular weight
 
     # set the run
-    # a = jdi.Atmosphere(['MnS','Cr','MgSiO3','Fe'],
-    a = jdi.Atmosphere(
-        ["MnS"], fsed=fsed, mh=metallicity, mmw=mean_molecular_weight, b=b  # , 'Cr'],
-    )
+    # a = jdi.Atmosphere(['MnS','Cr','MgSiO3','Fe'], fsed=fsed, mh=metallicity, mmw=mean_molecular_weight, b=b)
+    a = jdi.Atmosphere(["MnS"], fsed=fsed, mh=metallicity, mmw=mean_molecular_weight, b=b)  # , 'Cr'],)
 
     # set the planet gravity
     grav = 7.460

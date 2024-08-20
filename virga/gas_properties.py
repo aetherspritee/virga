@@ -274,6 +274,8 @@ Proc. 16, 379 (2010)
 
     gas_mw = 87.00
 
+    print(f"{gas_mmr = }")
+    print(f"{mw_atmos = }")
     gas_mmr = gas_mmr * (gas_mw/mw_atmos)
 
     #Lodders and Fegley (2003) (cvm)

@@ -800,7 +800,8 @@ def compute(
         # Get gas properties including gas mean molecular weight,
         # gas mixing ratio, and the density
         run_gas = getattr(gas_properties, igas)
-        gas_mw[i], gas_mmr[i], rho_p[i] = run_gas(mmw, mh=mh, gas_mmr=atmo.gas_mmr)
+        print(f"{atmo.gas_mmr = }")
+        gas_mw[i], gas_mmr[i], rho_p[i] = run_gas(mmw, mh=mh, gas_mmr=atmo.gas_mmr[igas])
 
         # Get mie files that are already saved in
         # directory
@@ -1789,6 +1790,7 @@ def eddysed(
                     )
 
         z_cld = None
+        layer_num = 0
         for iz in range(nz - 1, -1, -1):  # goes from BOA to TOA
             (
                 qc[iz, i],
@@ -1833,8 +1835,9 @@ def eddysed(
                 c_p_factor,  # all scalars
                 og_vfall,
                 z_cld,
+                layer_num
             )
-
+            layer_num += 1
             qc_path[i] = qc_path[i] + qc[iz, i] * (p_top[iz + 1] - p_top[iz]) / gravity
         z_cld_out[i] = z_cld
 
