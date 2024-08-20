@@ -1486,6 +1486,7 @@ def eddysed_fractal(
                     )
 
         z_cld = None
+        layer_number = 0
         for iz in range(nz - 1, -1, -1):  # goes from BOA to TOA
             (
                 qc[iz, i],
@@ -1533,8 +1534,9 @@ def eddysed_fractal(
                 r_mon=r_mon,
                 Df=Df,
                 kf=kf,
+                layer_number=layer_number
             )
-
+            layer_number += 1
             qc_path[i] = qc_path[i] + qc[iz, i] * (p_top[iz + 1] - p_top[iz]) / gravity
         z_cld_out[i] = z_cld
 

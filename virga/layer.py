@@ -602,7 +602,7 @@ def calc_qc(
                         vlo = vlo / 10
                         vhi = vhi * 10
 
-        vfall_file = Path("fractal_vfall_info.json")
+        vfall_file = Path("vfall_info.json")
         vfall_data = {"layer0": {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p}}
         if not vfall_file.is_file():
             with open(vfall_file, "w") as f:
@@ -902,7 +902,6 @@ def layer_fractal(
                 kf=kf,
                 layer_num=layer_number
             )
-            layer_counter += 1
 
             #   vertical sums
             qc_layer = qc_layer + qc_sub * dp_sub / gravity
@@ -1248,16 +1247,9 @@ def calc_qc_fractal(
 
                         
         vfall_file = Path("fractal_vfall_info.json")
-        print(f"{gravity = }")
-        print(f"{mfp = }")
-        print(f"{mw_atmos = }")
-        print(f"{visc = }")
-        print(f"{t_layer = }")
-        print(f"{p_layer = }")
-        print(f"{rho_p = }")
         vfall_data = {"layer0": {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}}
         if not vfall_file.is_file():
-            with open(vfall_file, "a") as f:
+            with open(vfall_file, "w") as f:
                 json.dump(vfall_data,f)
         
         else:
@@ -1266,6 +1258,9 @@ def calc_qc_fractal(
             
         # vfall_data[f"layer{layer_num}"] =  {"radii": r_, "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}
         vfall_data[f"layer{layer_num}"] = {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}
+        #print(f"{layer_num = }")
+        #print(f"{vfall_data = }")
+        #time.sleep(1)
         with open(vfall_file, "w") as f:
             json.dump(vfall_data,f)
         pars, cov = optimize.curve_fit(
