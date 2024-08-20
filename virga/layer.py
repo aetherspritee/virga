@@ -598,7 +598,7 @@ def calc_qc(
                         vlo = vlo / 10
                         vhi = vhi * 10
 
-        vfall_file = Path("vfall_info.json")
+        vfall_file = Path("fractal_vfall_info.json")
         print(f"{gravity = }")
         print(f"{mfp = }")
         print(f"{mw_atmos = }")
@@ -608,7 +608,7 @@ def calc_qc(
         print(f"{rho_p = }")
         vfall_data = {"layer0": {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}}
         if not vfall_file.is_file():
-            with open(vfall_file, "a") as f:
+            with open(vfall_file, "w") as f:
                 json.dump(vfall_data,f)
         
         else:
