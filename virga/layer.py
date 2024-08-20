@@ -689,6 +689,7 @@ def layer_fractal(
     r_mon,
     Df,
     kf,
+    layer_number=-1
 ):
     """
     Calculate layer condensate properties by iterating on optical depth
@@ -847,7 +848,6 @@ def layer_fractal(
         # SUBALYER
         dp_sub = dp_layer / nsub
 
-        layer_counter = 0
         for isub in range(nsub):
             qt_below = qt_bot_sub
             p_top_sub = p_bot_sub - dp_sub
@@ -900,7 +900,7 @@ def layer_fractal(
                 r_mon=r_mon,
                 Df=Df,
                 kf=kf,
-                layer_num=layer_counter
+                layer_num=layer_number
             )
             layer_counter += 1
 
@@ -1247,7 +1247,7 @@ def calc_qc_fractal(
                         vhi = vhi * 10
 
                         
-        vfall_file = Path("vfall_info.json")
+        vfall_file = Path("fractal_vfall_info.json")
         print(f"{gravity = }")
         print(f"{mfp = }")
         print(f"{mw_atmos = }")
@@ -1266,7 +1266,7 @@ def calc_qc_fractal(
             
         # vfall_data[f"layer{layer_num}"] =  {"radii": r_, "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}
         vfall_data[f"layer{layer_num}"] = {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf}
-        with open("vfall_info.json", "w") as f:
+        with open(vfall_file, "w") as f:
             json.dump(vfall_data,f)
         pars, cov = optimize.curve_fit(
             f=pow_law,
