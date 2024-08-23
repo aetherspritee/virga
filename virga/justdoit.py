@@ -16,7 +16,7 @@ from virga.direct_mmr_solver import direct_solver
 from virga.calc_mie import calc_scattering, get_r_grid, calc_mie_db, get_mie, load_stored_fractal_scat_props
 from virga.layer import layer, layer_fractal
 from particle_generator.particle_generator import Particle
-import pickle
+import pickle, time
 
 class Atmosphere:
     def __init__(
@@ -808,7 +808,7 @@ def compute(
         # eventually we will replace this with nice database
 
         qext_test, qscat_test, g_qscat_test, radius_test, wave_in_test = calc_mie_db(
-            [igas], directory, directory, rmin=1e-5, nradii=10
+            [igas], directory, directory#, rmin=1e-5, nradii=10
         )
 
         qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = get_mie(
@@ -816,6 +816,7 @@ def compute(
         )
         print("PRE:")
         print(radius)
+        time.sleep(15)
         if i == 0:
             nradii = len(radius)
             rmin = np.min(radius)
