@@ -562,7 +562,7 @@ def compute_yasf(
         if not load_scat_props:
             qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(particle_properties, igas, directory, mode=mode, store=store_scat_props)
         else:
-            qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = load_stored_fractal_scat_props(gas_name=igas, mode=mode)
+            qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = load_stored_fractal_scat_props(gas_name=igas,properties=particle_properties, mode=mode)
 
         print(f"{qext_gas = }")
         print(f"{qscat_gas = }")

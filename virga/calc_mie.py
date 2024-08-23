@@ -417,10 +417,10 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
 
     return qext, qscat, cos_qscat, nwave, radii ,wave_in
 
-def load_stored_fractal_scat_props(gas_name: str, mode: str, data_dir: Path=Path("/home/dsc/virga-data/")):
-
+def load_stored_fractal_scat_props(gas_name: str, properties: Particle, mode: str, data_dir: Path=Path("/home/dsc/virga-data/")):
+    file_name = gas_name+f"_kf_{properties.kf}_df_{properties.Df}_rmon_{properties.monomer_size}_{mode}.mieff"
     df = pd.read_csv(
-        os.path.join(data_dir, gas_name + f"_{mode}.mieff"),
+        os.path.join(data_dir, file_name),
         names=["wave", "qscat", "qext", "cos_qscat"],
         sep=' ',
     )
