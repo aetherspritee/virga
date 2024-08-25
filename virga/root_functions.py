@@ -258,16 +258,15 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, kf=1.0,D=2.0, Ragg=1.0):
 
     rho_atmos = (mw_atmos*p) / (R_GAS*t) #atmospheric density
     drho = rhop - rho_atmos
+    print(f"{rhop = }")
+    print(f"{rho_atmos = }")
+    print(f"{drho = }")
     v_thermal = np.sqrt((3*k*t)/mass) #root mean speed of the gas
 
     #the stopping time of the particle
-    # TODO: where does this come from????
-    # g/cm² / (cm/s * g/cm³) = g/cm² * cm³*s/g*cm = s
     t_stop_epstein_r = (2.0/3.0) * (r*drho) / (rho_atmos*v_thermal)
 
-    # TODO: what is this????
-    # t * g = velocity, what is this
-    # (Ragg/r)**(D) = N?
+    print(f"{t_stop_epstein_r = }")
     vfall_epstein_agg_r = t_stop_epstein_r * grav * kf * (Ragg/r)**(D-2)
 
     return vfall_epstein_agg_r
