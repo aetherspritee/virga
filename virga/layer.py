@@ -1216,6 +1216,7 @@ def calc_qc_fractal(
         vfall_temp = []
         for j in range(len(r_)):
             if og_vfall:
+                print("correct!!")
                 vfall_temp.append(
                     var_vfall(r_[j], gravity, mw_atmos, mfp, visc, t_layer, p_layer, rho_p, mode="fractal", r_mon=r_mon,kf=kf, Df=Df)
                 )

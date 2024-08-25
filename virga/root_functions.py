@@ -88,7 +88,8 @@ def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",r_mon=0.01,kf=1.0,
         return vfall(r,grav,mw_atmos, mfp, visc, t, p, rhop)
     elif mode == "fractal":
         if Df < 2.5:
-            # FIXME: i dont like this
+            print(f"{r_mon = }")
+            print(f"{r = }")
             return vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop, kf=kf,D=Df, Ragg=r)
         else:
             N = kf * (r/r_mon)**Df
@@ -258,9 +259,9 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, kf=1.0,D=2.0, Ragg=1.0):
 
     rho_atmos = (mw_atmos*p) / (R_GAS*t) #atmospheric density
     drho = rhop - rho_atmos
-    print(f"{rhop = }")
-    print(f"{rho_atmos = }")
-    print(f"{drho = }")
+    # print(f"{rhop = }")
+    # print(f"{rho_atmos = }")
+    # print(f"{drho = }")
     v_thermal = np.sqrt((3*k*t)/mass) #root mean speed of the gas
 
     #the stopping time of the particle

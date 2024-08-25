@@ -485,6 +485,11 @@ def fractal_calc_qc(
             vfall_temp = []
             for j in range(len(r_)):
                 if og_vfall:
+                    print("NOOOOOOOOOOOOOOO")
+                    print("NOOOOOOOOOOOOOOO")
+                    print("NOOOOOOOOOOOOOOO")
+                    print("NOOOOOOOOOOOOOOO")
+                    print("NOOOOOOOOOOOOOOO")
                     vfall_temp.append(
                         # TODO: use aggregate fall vel
                         var_vfall(r_[j], gravity, mw_atmos, mfp(T, P), visc(T), T, P, rho_p, "fractal", N, kf, Df)
