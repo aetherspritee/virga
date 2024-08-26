@@ -534,6 +534,7 @@ def compute_yasf(
 
     assert directory != None , "Need a directory for now"
     rmin, nradii = get_radii_tentatively(directory, condensibles[0])
+
     # TODO: alternative selection of radii
 
 
@@ -1136,12 +1137,12 @@ def calc_optics(
                 norm = 0.0
                 for irad in range(nrad):
                     rr = radius[irad]
-                    print(f"{dr[irad] = }")
-                    print(f"{rr = }")
+                    # print(f"{dr[irad] = }")
+                    # print(f"{rr = }")
                     arg1 = dr[irad] / (np.sqrt(2.0 * PI) * rr * np.log(rsig))
-                    print(f"{arg1  =}")
+                    # print(f"{arg1  =}")
                     arg2 = -np.log(rr / rg[iz, igas]) ** 2 / (2 * np.log(rsig) ** 2) # lognormal dist
-                    print(f"{arg2  =}")
+                    # print(f"{arg2  =}")
                     norm = norm + arg1 * np.exp(arg2)
                     # print (rr, rg[iz,igas],rsig,arg1,arg2)
 
@@ -1151,15 +1152,15 @@ def calc_optics(
                 # @dusc: this is some sort of integration over the individual layers using the particle distributions
                 # and number densities of particles
                 for irad in range(nrad):
-                    print("==================")
-                    print(f"{radius[irad] = }")
+                    # print("==================")
+                    # print(f"{radius[irad] = }")
                     rr = radius[irad]
                     arg1 = dr[irad] / (np.sqrt(2.0 * PI) * np.log(rsig))
                     # print(f"{arg1 = }")
                     arg2 = -np.log(rr / rg[iz, igas]) ** 2 / (2 * np.log(rsig) ** 2)
                     # print(f"{arg2 = }")
                     pir2ndz = norm * PI * rr * arg1 * np.exp(arg2) # rr*pi* PDF, what is this?
-                    print(f"{pir2ndz = }")
+                    # print(f"{pir2ndz = }")
                     for iwave in range(nwave):
                         scat_gas[iz, iwave, igas] = (
                             scat_gas[iz, iwave, igas]
@@ -1173,9 +1174,9 @@ def calc_optics(
                             cqs_gas[iz, iwave, igas]
                             + cos_qscat[iwave, irad, igas] * pir2ndz
                         )
-                    print(f"{qext[0,irad,igas]*pir2ndz = }")
-                    print(f"{qscat[0,irad,igas]*pir2ndz = }")
-                    print("==================")
+                    # print(f"{qext[0,irad,igas]*pir2ndz = }")
+                    # print(f"{qscat[0,irad,igas]*pir2ndz = }")
+                    # print("==================")
                         # TO DO ADD IN CLOUD SUBLAYER KLUGE LATER
 
     for igas in range(ngas):

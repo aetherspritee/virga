@@ -10,6 +10,7 @@ import virga.gas_properties
 from scipy.stats import lognorm
 from scipy.integrate import quad, simps
 from scipy import optimize
+import time
 
 def advdiff(
     qt,
@@ -261,14 +262,27 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, kf=1.0,D=2.0, Ragg=1.0):
     drho = rhop - rho_atmos
     # print(f"{rhop = }")
     # print(f"{rho_atmos = }")
-    # print(f"{drho = }")
+    print(f"{drho = }")
     v_thermal = np.sqrt((3*k*t)/mass) #root mean speed of the gas
+    print(f"{v_thermal = }")
 
+    N = kf * (Ragg/r)**D
+    m_mon = rhop  * 4/3 * np.pi * r**3
+    m_agg = N*m_mon
+    v_agg = Ragg**3 * 4/3 * np.pi
+    rho_agg = m_agg/v_agg
     #the stopping time of the particle
-    t_stop_epstein_r = (2.0/3.0) * (r*drho) / (rho_atmos*v_thermal)
+    t_stop_epstein_r = (2.0/3.0) * (r*drho) / (rho_atmos*v_thermal) * kf * (Ragg/r)**(D-2)
+    t_stop_epstein_2 = (2.0/3.0) * (Ragg*rho_agg)/(v_thermal * rho_atmos)
 
+    print(f"{Ragg = }")
+    print(f"{r = }")
+    print(f"{rho_agg = }")
+    #print(f"{D = }")
+    #print(f"{(Ragg/r)**(D-2) = }")
     print(f"{t_stop_epstein_r = }")
-    vfall_epstein_agg_r = t_stop_epstein_r * grav * kf * (Ragg/r)**(D-2)
+    print(f"{t_stop_epstein_2 = }")
+    vfall_epstein_agg_r = t_stop_epstein_r * grav 
 
     return vfall_epstein_agg_r
 
@@ -381,7 +395,10 @@ def vfall_find_root_fractal(
     if Df < 2.5:
         # regular fall speed
         # FIXME: Dont like this _here_ either
-        vfall_r = vfall_aggregrates(r, grav, mw_atmos, t, p, rhop)
+        print("yayayayayaya")
+        print(f"{r = }")
+        print(f"{r_mon = }")
+        vfall_r = vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop,D=Df,kf=kf,Ragg=r)
     else:
         # use ohno fall speed
         N = kf * (r/r_mon)**Df
