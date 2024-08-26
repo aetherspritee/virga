@@ -1154,6 +1154,11 @@ def calc_qc_fractal(
         rlo = 10*r_mon*1e3
         rhi = 10.0
 
+        print("=====================0")
+        print(f"{rlo = }")
+        print(f"{rhi = }")
+        print("=====================0")
+        time.sleep(5)
         #   precision of vfall solution (cm/s)
         find_root = True
         while find_root:
@@ -1213,6 +1218,10 @@ def calc_qc_fractal(
             return np.log(w_convect) + alpha * np.log(r / rw_layer)
 
         r_, _, _ = get_r_grid(r_min=rmin, n_radii=nrad)
+        print("===============================")
+        print(f"{r_ = }")
+        print("===============================")
+        time.sleep(5)
         vfall_temp = []
         for j in range(len(r_)):
             if og_vfall:
