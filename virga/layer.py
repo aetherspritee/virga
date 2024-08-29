@@ -192,7 +192,16 @@ def layer(
         / (PI * d_molecule**2)
         / (1.22 * (t_layer / eps_k) ** (-0.16))
     )
+    
+    # TODO: attempt some storing of data here
+    with open("vfall_data.json", "a") as f:
+        pass
+    with open("vfall_data.json", "r") as f:
+        vfall_data = json.load(f)
+    vfall_data[f"layer{layer_num}"] = {"t": t_layer, "p": p_layer, "mfp": mfp, "visc": visc, "grav": gravity, "mw_atmos": mw_atmos, "w*": w_convect}
 
+    with open("vfall_data.json", "w") as f:
+        json.dump(vfall_data,f)
     #   --------------------------------------------------------------------
     #   Top of convergence loop
     converge = False
@@ -691,6 +700,7 @@ def layer_fractal(
     kf,
     layer_number=-1
 ):
+    print(f"IN LAYER FRAC: {rmin = }, {nrad = }")
     """
     Calculate layer condensate properties by iterating on optical depth
     in one model layer (convering on optical depth over sublayers)
@@ -995,6 +1005,8 @@ def calc_qc_fractal(
     kf=1.0,
     layer_num = -1
 ):
+    print(f"IN CALC QC FRAC: {rmin = }, {nrad = }")
+    #time.sleep(5)
     """
     Calculate condensate optical depth and effective radius for a layer,
     assuming geometric scatterers.
@@ -1151,14 +1163,15 @@ def calc_qc_fractal(
 
         #   range of particle radii to search (cm)
         # FIXME: im not sure this is a smart idea, but i think its fine
-        rlo = 10*r_mon*1e3
+        print(f"{r_mon = }")
+        rlo = 10*r_mon
         rhi = 10.0
 
         print("=====================0")
         print(f"{rlo = }")
         print(f"{rhi = }")
         print("=====================0")
-        time.sleep(5)
+        # time.sleep(5)
         #   precision of vfall solution (cm/s)
         find_root = True
         while find_root:
@@ -1221,13 +1234,13 @@ def calc_qc_fractal(
         print("===============================")
         print(f"{r_ = }")
         print("===============================")
-        time.sleep(5)
+        # time.sleep(5)
         vfall_temp = []
         for j in range(len(r_)):
             if og_vfall:
                 print("correct!!")
                 vfall_temp.append(
-                    var_vfall(r_[j], gravity, mw_atmos, mfp, visc, t_layer, p_layer, rho_p, mode="fractal", r_mon=r_mon,kf=kf, Df=Df)
+                    var_vfall(r_[j], gravity, mw_atmos, mfp, visc, t_layer, p_layer, rho_p, mode="fractal", r_mon=r_mon*1e-5,kf=kf, Df=Df)
                 )
             else:
                 vlo = 1e0

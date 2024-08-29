@@ -7,6 +7,7 @@ import pandas as pd
 import csv
 import sys
 import os
+import time
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
@@ -324,12 +325,19 @@ def get_mie(gas, directory):
 
 
 def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: str="YASF", store=False, db_name="/home/dsc/virga-data"):
-    assert (mode in VALID_MODES), "Only valid modes are 'YASF' and 'MMF'"
+    assert (mode in VALID_MODES), "Only valid modes are 'YASF', 'MSTM' and 'MMF'"
 
-    radii = properties.radii
+    # ALL UNITS ARE IN CM! OPTOOL NEEDS µM!
+    radii = list(np.array(properties.radii) * 1e4) # R_g done here, r_mon done below
+    print(f"{radii = }")
+    print(f"{properties.monomer_size = }")
+    print(f"{properties.N = }")
+    print(f"{properties.Df = }")
+    print(f"{properties.kf = }")
     nradii = len(radii)
     wave_in, _, _ = get_refrind(gas_name, data_dir)
     nwave = len(wave_in)  # number of wavalength bin centres for calculation
+    # time.sleep(15)
 
     qext = np.zeros((nwave, nradii))
     qscat = np.zeros((nwave, nradii))
@@ -361,9 +369,9 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
             print(f"CURRENT N: {properties.N[r_idx]}")
             print(f"CURRENT R0: {properties.monomer_size}")
             # r_agg != a, use formula provided in optool manual
-            a = (properties.N[r_idx]*properties.monomer_size**3)**(1/3)
+            a = (properties.N[r_idx]*(properties.monomer_size*1e4)**3)**(1/3)
             print(f"CALCULATED a: {a}")
-            p = mmf_parsing.run_optool(a=a,a0=properties.monomer_size,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
+            p = mmf_parsing.run_optool(a=a,a0=properties.monomer_size*1e4,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
             q_scat = p.ksca
             q_ext = p.kext
             # q_ext, q_scat = mmf_parsing.get_efficiencies(p, properties.N[r_idx], properties.rho, Df=properties.Df, kf=properties.kf)
@@ -403,6 +411,13 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
     with open("SCAT_PROPS_MMF.pickle", "wb") as f:
         pickle.dump(scat_inp, f)
 
+    print("===============================")
+    print("===============================")
+    print("FROM LIGHT SCAT CALC:")
+    print(f"{radii = }")
+    print("HOPE THATS COOL WITH YOU")
+    print("===============================")
+    print("===============================")
     if store:
         with open(os.path.join(db_name, gas_name + f"_kf_{properties.kf}_df_{properties.Df}_rmon_{properties.monomer_size}_{mode}.mieff"),"a") as f:
             pass
@@ -428,8 +443,10 @@ def load_stored_fractal_scat_props(gas_name: str, properties: Particle, mode: st
     nwave = int(df.iloc[0, 0])
     nradii = int(df.iloc[0, 1])
 
+    print("WOOOOOOOOW")
     # get the radii (all the rows where there the last three rows are nans)
     radii = df.loc[np.isnan(df["qscat"])]["wave"].values
+    print(f"{radii = }")
 
     df = df.dropna()
 

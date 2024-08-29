@@ -61,7 +61,7 @@ else:
 
     # set the run
     # a = jdi.Atmosphere(['MnS','Cr','MgSiO3','Fe'], fsed=fsed, mh=metallicity, mmw=mean_molecular_weight, b=b)
-    a = jdi.Atmosphere(["MnS"], fsed=fsed, mh=metallicity, mmw=mean_molecular_weight, b=b)  # , 'Cr'],)
+    a = jdi.Atmosphere(["MgSiO3"], fsed=fsed, mh=metallicity, mmw=mean_molecular_weight, b=b)  # , 'Cr'],)
 
     # set the planet gravity
     grav = 7.460

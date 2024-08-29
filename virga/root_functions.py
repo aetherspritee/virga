@@ -177,10 +177,17 @@ def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
 
     # compute reynolds number for low reynolds number case
     reynolds = 2.0 * r * rho_atmos * vfall_r / visc
+    print(f"{r = }")
+    print(f"{reynolds = }")
 
     # if reynolds number is between 1-1000 we are in turbulent flow
     # limit
     if (reynolds > 1) and (reynolds <= 1e3):  #:#(reynolds >1e-2) and (reynolds <= 300)
+        print("SLIIIIIIIIIIIIIIIIP")
+        print("SLIIIIIIIIIIIIIIIIP")
+        print("SLIIIIIIIIIIIIIIIIP")
+        time.sleep(1)
+
         # OLD METHODLOGY
         # correct drag coefficient for turbulence (x = Cd Re^2 / 24)
         # x = np.log( reynolds )
@@ -214,6 +221,10 @@ def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
         vfall_r = visc * reynolds / (2.0 * r * rho_atmos)
 
     if reynolds > 1e3:  # 300
+        print("TURBULENCEEEEEEEEEEEEEE")
+        print("TURBULENCEEEEEEEEEEEEEE")
+        print("TURBULENCEEEEEEEEEEEEEE")
+        time.sleep(1)
         # when Reynolds is greater than 1000, we can just use
         # an asymptotic value that is independent of Reynolds number
         # Eqn. B3 from A&M 01
@@ -260,8 +271,9 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, kf=1.0,D=2.0, Ragg=1.0):
 
     rho_atmos = (mw_atmos*p) / (R_GAS*t) #atmospheric density
     drho = rhop - rho_atmos
-    # print(f"{rhop = }")
-    # print(f"{rho_atmos = }")
+    print(f"{grav = }")
+    print(f"{rhop = }")
+    print(f"{rho_atmos = }")
     print(f"{drho = }")
     v_thermal = np.sqrt((3*k*t)/mass) #root mean speed of the gas
     print(f"{v_thermal = }")
@@ -284,6 +296,7 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, kf=1.0,D=2.0, Ragg=1.0):
     print(f"{t_stop_epstein_2 = }")
     vfall_epstein_agg_r = t_stop_epstein_r * grav 
 
+    time.sleep(0.5)
     return vfall_epstein_agg_r
 
 def vfall_aggregrates_ohno(r, grav,mw_atmos,mfp, t, p, rhop, ad_qc, kf=1.0,D=2.0):
@@ -398,6 +411,7 @@ def vfall_find_root_fractal(
         print("yayayayayaya")
         print(f"{r = }")
         print(f"{r_mon = }")
+        # time.sleep(2)
         vfall_r = vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop,D=Df,kf=kf,Ragg=r)
     else:
         # use ohno fall speed

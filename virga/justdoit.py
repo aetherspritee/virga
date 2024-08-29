@@ -534,6 +534,7 @@ def compute_yasf(
 
     assert directory != None , "Need a directory for now"
     rmin, nradii = get_radii_tentatively(directory, condensibles[0])
+    print(f"{rmin = }, {nradii = }")
 
     # TODO: alternative selection of radii
 
@@ -550,7 +551,11 @@ def compute_yasf(
         # determine which radii to use, might wanna move this somewhere else
 
 
+        # HACK: REVIEW THIS ASAP, THIS ISNT GOOD; SHOULD USE SMTH THAT YIELDS CONSTANT N
+        rmin = 10 * particle_props.monomer_size
+        nradii = 30
         radii, _, _ = get_r_grid(rmin, n_radii=nradii)
+        print(f"{radii = }")
         # comment out for faster testing
         # radii = radii[-2:-1]
 
@@ -588,6 +593,13 @@ def compute_yasf(
 
     z_cld = None  # temporary fix
 
+    # HACK: REVIEW AND FIX
+    rmin *= 1e-4
+    print(f"{rmin = }")
+    print(f"{nradii = }")
+    print(f"{particle_properties.monomer_size = }")
+    # time.sleep(5)
+    print("bravo6 going dark")
     qc, qt, rg, reff, ndz, qc_path, mixl, z_cld = eddysed_fractal(
         atmo.t_level,
         atmo.p_level,
@@ -817,7 +829,7 @@ def compute(
         )
         print("PRE:")
         print(radius)
-        time.sleep(15)
+        # time.sleep(15)
         if i == 0:
             nradii = len(radius)
             rmin = np.min(radius)
@@ -1269,6 +1281,7 @@ def eddysed_fractal(
     Df: float=1.8,
     kf: float=1.0,
 ):
+    print(f"IN EDDYSED FRAC: {rmin = }, {nrad = }")
     """
     Given an atmosphere and condensates, calculate size and concentration
     of condensates in balance between eddy diffusion and sedimentation.
@@ -1972,6 +1985,7 @@ def compute_vfall_fractal(atmo: Atmosphere,particle_props: Particle, directory):
 
     assert directory != None , "Need a directory for now"
     rmin, nradii = get_radii_tentatively(directory, condensibles[0])
+    print(f"{rmin = }, {nradii = }")
 
     results["condensibles"] = condensibles
     for i, igas in zip(range(ngas), condensibles):
@@ -1979,6 +1993,7 @@ def compute_vfall_fractal(atmo: Atmosphere,particle_props: Particle, directory):
         gas_mw[i], gas_mmr[i], rho_p[i] = run_gas(mmw, mh=mh, gas_mmr=atmo.gas_mmr[igas])
 
         radii, _, _ = get_r_grid(rmin, n_radii=nradii)
+        print(f"{radii = }")
         # comment out for faster testing
         # radii = radii[-2:-1]
 
