@@ -1,4 +1,5 @@
 import os,sys
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 sys.path.append(os.path.dirname("/home/dsc/master/"))
@@ -91,7 +92,8 @@ def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",r_mon=0.01,kf=1.0,
         if Df < 2.5:
             print(f"{r_mon = }")
             print(f"{r = }")
-            return vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop, kf=kf,D=Df, Ragg=r)
+            # return vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop, kf=kf,D=Df, Ragg=r)
+            return vfall_aggregates_nakamura(r=r_mon, grav=grav, mw_atmo=mw_atmos, t=t, p=p, mfp=mfp, visc=visc, rhop=rhop)
         else:
             N = kf * (r/r_mon)**Df
             rho_agg =  N* (4/3*np.pi*r_mon**3) * rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
@@ -362,6 +364,57 @@ def vfall_aggregrates_ohno(r, grav,mw_atmos,mfp, t, p, rhop, ad_qc, kf=1.0,D=2.0
 
     return vfall_r_ohno
 
+def vfall_aggregates_nakamura(r, grav, mw_atmo, mfp, visc, t, p, rhop, f=4):
+    # default virga but use an empirical shape factor to adjust the drag coefficient.
+    # Nakamura et al 1994 suggests f=11 for BCCA (Df=1.9) and 4.8 for BCPA (Df=2.9)
+
+    cdrag = 0.45*f
+
+    b1 = 0.8
+    b2 = -0.01
+
+    R_GAS = 8.3143e7
+
+    knudsen = mfp / r
+    rho_atmos = p / ((R_GAS / mw_atmo) * t)
+    drho = rhop - rho_atmos
+
+    beta_slip = 1.0 + 1.26 * knudsen
+
+    # Re < 1
+    vfall_r = beta_slip * (2.0 / 9.0) * drho * grav * r**2 / visc
+
+    reynolds = 2.0 * r * rho_atmos * vfall_r / visc
+
+    if (reynolds > 1) and (reynolds <= 1e3):  #:#(reynolds >1e-2) and (reynolds <= 300)
+        cd_nre2 = 1/f * 32.0 * r**3.0 * drho * rho_atmos * grav / (3.0 * visc**2)
+        xx = np.log(cd_nre2)
+        b0, b1, b2, b3, b4, b5, b6 = (
+            -0.318657e1,
+            0.992696,
+            -0.153193e-2,
+            -0.987059e-3,
+            -0.578878e-3,
+            0.855176e-4,
+            -0.327815e-5,
+        )
+        y = (
+            b0
+            + b1 * xx**1
+            + b2 * xx**2
+            + b3 * xx**3
+            + b4 * xx**4
+            + b5 * xx**5
+            + b6 * xx**6
+        )
+
+        reynolds = np.exp(y)
+        vfall_r = visc * reynolds / (2.0 * r * rho_atmos)
+
+    if reynolds > 1e3:  # 300
+        vfall_r = beta_slip * np.sqrt(8.0 * drho * r * grav / (3.0 * cdrag * rho_atmos))
+
+    return vfall_r
 
 def my_vfall_aggregrates_ohno(r_agg,rho_agg, grav,mw_atmos,mfp, t, p):
     #Define some constants
