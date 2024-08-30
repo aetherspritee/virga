@@ -93,7 +93,7 @@ def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",r_mon=0.01,kf=1.0,
             print(f"{r_mon = }")
             print(f"{r = }")
             # return vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop, kf=kf,D=Df, Ragg=r)
-            return vfall_aggregates_nakamura(r=r_mon, grav=grav, mw_atmo=mw_atmos, t=t, p=p, mfp=mfp, visc=visc, rhop=rhop)
+            return vfall_aggregates_nakamura(r=r, grav=grav, mw_atmo=mw_atmos, t=t, p=p, mfp=mfp, visc=visc, rhop=rhop)
         else:
             N = kf * (r/r_mon)**Df
             rho_agg =  N* (4/3*np.pi*r_mon**3) * rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
@@ -414,6 +414,7 @@ def vfall_aggregates_nakamura(r, grav, mw_atmo, mfp, visc, t, p, rhop, f=4):
     if reynolds > 1e3:  # 300
         vfall_r = beta_slip * np.sqrt(8.0 * drho * r * grav / (3.0 * cdrag * rho_atmos))
 
+    print(f"{vfall_r = }")
     return vfall_r
 
 def my_vfall_aggregrates_ohno(r_agg,rho_agg, grav,mw_atmos,mfp, t, p):
@@ -464,8 +465,9 @@ def vfall_find_root_fractal(
         print("yayayayayaya")
         print(f"{r = }")
         print(f"{r_mon = }")
+        # vfall_r = vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop,D=Df,kf=kf,Ragg=r)
+        vfall_r = vfall_aggregates_nakamura(r, grav, mw_atmos, mfp,visc,t, p, rhop)
         # time.sleep(2)
-        vfall_r = vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop,D=Df,kf=kf,Ragg=r)
     else:
         # use ohno fall speed
         N = kf * (r/r_mon)**Df
