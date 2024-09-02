@@ -338,7 +338,7 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
     wave_in, _, _ = get_refrind(gas_name, data_dir)
     nwave = len(wave_in)  # number of wavalength bin centres for calculation
     # time.sleep(15)
-
+    monomer_size = properties.monomer_size * 1e4
     qext = np.zeros((nwave, nradii))
     qscat = np.zeros((nwave, nradii))
     g0 = np.zeros((nwave, nradii))
@@ -349,7 +349,7 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
 
         particle_generator = ParticleGenerator(fracval_bin_path = FRACAL_BIN_PATH)
         for r_idx in range(len(radii)):
-            particle_csv = particle_generator.fracval(r_mon=properties.monomer_size,df=properties.Df,N=properties.N[r_idx],r_agg=radii[r_idx], directory=data_dir,kf=properties.kf)
+            particle_csv = particle_generator.fracval(r_mon=monomer_size,df=properties.Df,N=properties.N[r_idx],r_agg=radii[r_idx], directory=data_dir,kf=properties.kf)
             refractive_index_table = read_virga_refrinds(gas_name, data_dir)
             refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
             particles, numerics, simulation, optics = prep_yasf(refractive_index_table,particle_csv, wavelength=wave_in)
@@ -367,11 +367,11 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
         for r_idx in range(len(radii)):
             print(f"CURRENT RADIUS: {radii[r_idx]}")
             print(f"CURRENT N: {properties.N[r_idx]}")
-            print(f"CURRENT R0: {properties.monomer_size}")
+            print(f"CURRENT R0: {monomer_size}")
             # r_agg != a, use formula provided in optool manual
-            a = (properties.N[r_idx]*(properties.monomer_size*1e4)**3)**(1/3)
+            a = (properties.N[r_idx]*(monomer_size)**3)**(1/3)
             print(f"CALCULATED a: {a}")
-            p = mmf_parsing.run_optool(a=a,a0=properties.monomer_size*1e4,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
+            p = mmf_parsing.run_optool(a=a,a0=monomer_size,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
             q_scat = p.ksca
             q_ext = p.kext
             # q_ext, q_scat = mmf_parsing.get_efficiencies(p, properties.N[r_idx], properties.rho, Df=properties.Df, kf=properties.kf)
@@ -384,7 +384,7 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
     elif mode == "MSTM":
         particle_generator = ParticleGenerator(fracval_bin_path = FRACAL_BIN_PATH)
         for r_idx in range(len(radii)):
-            particle_csv = particle_generator.fracval(r_mon=properties.monomer_size,df=properties.Df,N=properties.N[r_idx],r_agg=radii[r_idx], directory=data_dir,kf=properties.kf)
+            particle_csv = particle_generator.fracval(r_mon=monomer_size,df=properties.Df,N=properties.N[r_idx],r_agg=radii[r_idx], directory=data_dir,kf=properties.kf)
             refractive_index_table = read_virga_refrinds(gas_name, data_dir)
             medium_refractive_index = np.ones_like(wave_in)
             spheres = pd.read_csv(particle_csv, header=None, names=['x', 'y', 'z', 'r', 'm_idx'])
@@ -419,9 +419,9 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
     print("===============================")
     print("===============================")
     if store:
-        with open(os.path.join(db_name, gas_name + f"_kf_{properties.kf}_df_{properties.Df}_rmon_{properties.monomer_size}_{mode}.mieff"),"a") as f:
+        with open(os.path.join(db_name, gas_name + f"_kf_{properties.kf}_df_{properties.Df}_rmon_{np.round(monomer_size,2)}_{mode}.mieff"),"a") as f:
             pass
-        with open(os.path.join(db_name, gas_name + f"_kf_{properties.kf}_df_{properties.Df}_rmon_{properties.monomer_size}_{mode}.mieff"),"w") as f:
+        with open(os.path.join(db_name, gas_name + f"_kf_{properties.kf}_df_{properties.Df}_rmon_{np.round(monomer_size,2)}_{mode}.mieff"),"w") as f:
             writer = csv.writer(f, delimiter =' ')
             writer.writerow([nwave, len(radii)])
             for r in range(len(radii)):
@@ -433,7 +433,8 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
     return qext, qscat, cos_qscat, nwave, radii ,wave_in
 
 def load_stored_fractal_scat_props(gas_name: str, properties: Particle, mode: str, data_dir: Path=Path("/home/dsc/virga-data/")):
-    file_name = gas_name+f"_kf_{properties.kf}_df_{properties.Df}_rmon_{properties.monomer_size}_{mode}.mieff"
+    r_mon = np.round(properties.monomer_size * 1e4,2)
+    file_name = gas_name+f"_kf_{properties.kf}_df_{properties.Df}_rmon_{r_mon}_{mode}.mieff"
     df = pd.read_csv(
         os.path.join(data_dir, file_name),
         names=["wave", "qscat", "qext", "cos_qscat"],

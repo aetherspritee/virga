@@ -1240,7 +1240,7 @@ def calc_qc_fractal(
             if og_vfall:
                 print("correct!!")
                 vfall_temp.append(
-                    var_vfall(r_[j], gravity, mw_atmos, mfp, visc, t_layer, p_layer, rho_p, mode="fractal", r_mon=r_mon*1e-5,kf=kf, Df=Df)
+                    var_vfall(r_[j], gravity, mw_atmos, mfp, visc, t_layer, p_layer, rho_p, mode="fractal", r_mon=r_mon,kf=kf, Df=Df)
                 )
             else:
                 vlo = 1e0
@@ -1269,7 +1269,7 @@ def calc_qc_fractal(
                         vhi = vhi * 10
 
                         
-        vfall_file = Path("fractal_vfall_info.json")
+        vfall_file = Path("nakamura_fractal_vfall_info.json")
         vfall_data = {"layer0": {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf, "vfall": vfall_temp}}
         if not vfall_file.is_file():
             with open(vfall_file, "w") as f:
