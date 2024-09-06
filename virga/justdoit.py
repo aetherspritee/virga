@@ -598,7 +598,8 @@ def compute_yasf(
     print(f"{rmin = }")
     print(f"{nradii = }")
     print(f"{particle_properties.monomer_size = }")
-    # time.sleep(5)
+    print(f"{atmo.p_level = }")
+    time.sleep(5)
     print("bravo6 going dark")
     qc, qt, rg, reff, ndz, qc_path, mixl, z_cld = eddysed_fractal(
         atmo.t_level,
@@ -664,6 +665,8 @@ def compute_yasf(
         fsed_out = fsed_in * np.exp((atmo.z - atmo.z_alpha) / atmo.b) + atmo.eps
     else:
         fsed_out = fsed_in
+
+    initial_radii, _, _ = get_r_grid(rmin, n_radii=nradii)
     return create_dict(
         qc,
         qt,
@@ -690,6 +693,7 @@ def compute_yasf(
         atmo.kz,
         atmo.scale_h,
         z_cld,
+        initial_radii
     )
 
 def get_radii_tentatively(directory: str, gas: str):
@@ -956,6 +960,7 @@ def compute(
             fsed_out = fsed_in * np.exp((atmo.z - atmo.z_alpha) / atmo.b) + atmo.eps
         else:
             fsed_out = fsed_in
+        radii_grid, _, _ = get_r_grid(rmin, n_radii=nradii)
         return create_dict(
             qc,
             qt,
@@ -982,6 +987,7 @@ def compute(
             atmo.kz,
             atmo.scale_h,
             z_cld,
+            radii_grid
         )
     else:
         return opd, w0, g0
@@ -1013,6 +1019,7 @@ def create_dict(
     kz,
     scale_h,
     z_cld,
+    r_init=[]
 ):
     if len(wave.shape) < 2:
         wave = wave[:,np.newaxis]
@@ -1048,6 +1055,7 @@ def create_dict(
         "kz_unit": "cm^2/s",
         "scale_height": scale_h,
         "cloud_deck": z_cld,
+        "initial_radii_grid": r_init
     }
 
 

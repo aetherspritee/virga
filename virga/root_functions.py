@@ -90,6 +90,7 @@ def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",r_mon=0.01,kf=1.0,
         return vfall(r,grav,mw_atmos, mfp, visc, t, p, rhop)
     elif mode == "fractal":
         if Df < 2.5:
+            print("this is wrong me thinks")
             print(f"{r_mon = }")
             print(f"{r = }")
             # return vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop, kf=kf,D=Df, Ragg=r)
@@ -188,7 +189,6 @@ def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
         print("SLIIIIIIIIIIIIIIIIP")
         print("SLIIIIIIIIIIIIIIIIP")
         print("SLIIIIIIIIIIIIIIIIP")
-        time.sleep(1)
 
         # OLD METHODLOGY
         # correct drag coefficient for turbulence (x = Cd Re^2 / 24)
@@ -226,7 +226,6 @@ def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
         print("TURBULENCEEEEEEEEEEEEEE")
         print("TURBULENCEEEEEEEEEEEEEE")
         print("TURBULENCEEEEEEEEEEEEEE")
-        time.sleep(1)
         # when Reynolds is greater than 1000, we can just use
         # an asymptotic value that is independent of Reynolds number
         # Eqn. B3 from A&M 01
@@ -298,7 +297,6 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, kf=1.0,D=2.0, Ragg=1.0):
     print(f"{t_stop_epstein_2 = }")
     vfall_epstein_agg_r = t_stop_epstein_r * grav 
 
-    time.sleep(0.5)
     return vfall_epstein_agg_r
 
 def vfall_aggregrates_ohno(r, grav,mw_atmos,mfp, t, p, rhop, ad_qc, kf=1.0,D=2.0):
