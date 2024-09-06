@@ -484,7 +484,8 @@ class Atmosphere:
         return run
 
     def compute_yasf(self):
-        run = compute_yasf(self)
+        # run = compute_yasf(self)
+        run = compute_fractal(self)
         return run
     
     def vfall(self, directory, fractal=True):
@@ -493,6 +494,186 @@ class Atmosphere:
             return run
         else:
             run = compute_vfall(self, directory=directory)
+
+
+def compute_fractal(
+    atmo: Atmosphere,
+    directory=None,
+    og_vfall=True,
+    particle_props: Particle = Particle(),
+    mode = "YASF",
+    store_scat_props = False,
+    load_scat_props = True,
+    ignore_scat = True,
+):
+    results = {}
+
+    mmw = atmo.mmw
+    mh = atmo.mh
+    condensibles = atmo.condensibles
+
+    ngas = len(condensibles)
+
+    gas_mw = np.zeros(ngas)
+    gas_mmr = np.zeros(ngas)
+    rho_p = np.zeros(ngas)
+
+    H = atmo.r_atmos * atmo.Teff / atmo.g
+    fsed_in = atmo.fsed
+
+    assert directory != None , "Need a directory for now"
+
+    # TODO: just use the default virga radii grid
+    rmin, nradii = get_radii_tentatively(directory, condensibles[0])
+    print(f"{rmin = }, {nradii = }")
+
+
+
+    results["condensibles"] = condensibles
+    for i, igas in zip(range(ngas), condensibles):
+        run_gas = getattr(gas_properties, igas)
+        gas_mw[i], gas_mmr[i], rho_p[i] = run_gas(mmw, mh=mh, gas_mmr=atmo.gas_mmr[igas])
+
+        # REVIEW: use mie for now as i dont really care about optical props, only size distr
+        qext_gas, qscat_gas, cos_qscat_gas, nwave, radii, wave_in = get_mie(
+            igas, directory
+        )
+        rmin = np.min(radii)
+        nradii = len(radii)
+        radii, _, _ = get_r_grid(rmin, n_radii=nradii)
+
+        particle_properties = Particle(list(radii),particle_props.monomer_size, particle_props.Df, particle_props.kf)
+        # if mode == "YASF":
+        #     print(f"I WILL BUILD A PARTICLE WITH {particle_properties.N} monomers!!")
+
+        # # TODO: Adjust inputs here!
+        # # TODO: Add func for MMF here aswell
+        # if not load_scat_props:
+        #     qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(particle_properties, igas, directory, mode=mode, store=store_scat_props)
+        # else:
+        #     qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = load_stored_fractal_scat_props(gas_name=igas,properties=particle_properties, mode=mode)
+
+        # print(f"{qext_gas = }")
+        # print(f"{qscat_gas = }")
+        # print(f"{nwave = }")
+        # print(f"{radius = }")
+
+        if i == 0:
+            nradii = len(radii)
+            rmin = float(np.min(radii))
+            results["rmin"] = rmin
+            radius, rup, dr = get_r_grid(rmin, n_radii=nradii)
+            qext = np.zeros((nwave, nradii, ngas))
+            qscat = np.zeros((nwave, nradii, ngas))
+            cos_qscat = np.zeros((nwave, nradii, ngas))
+
+        # add to master matrix that contains the per gas Mie stuff
+        qext[:, :, i], qscat[:, :, i], cos_qscat[:, :, i] = (
+            qext_gas,
+            qscat_gas,
+            cos_qscat_gas,
+        )
+
+    z_cld = None  # temporary fix
+
+    # HACK: REVIEW AND FIX
+    # rmin *= 1e-4
+    print(f"{rmin = }")
+    print(f"{nradii = }")
+    print(f"{particle_properties.monomer_size = }")
+    # time.sleep(5)
+    print("bravo6 going dark")
+    qc, qt, rg, reff, ndz, qc_path, mixl, z_cld = eddysed_fractal(
+        atmo.t_level,
+        atmo.p_level,
+        atmo.t_layer,
+        atmo.p_layer,
+        condensibles,
+        gas_mw,
+        gas_mmr,
+        rho_p,
+        mmw,
+        atmo.g,
+        atmo.kz,
+        atmo.mixl,
+        fsed_in,
+        atmo.b,
+        atmo.eps,
+        atmo.scale_h,
+        atmo.z_top,
+        atmo.z_alpha,
+        min(atmo.z),
+        atmo.param,
+        mh,
+        atmo.sig,
+        rmin,
+        nradii,
+        atmo.d_molecule,
+        atmo.eps_k,
+        atmo.c_p_factor,
+        og_vfall,
+        supsat=atmo.supsat,
+        verbose=atmo.verbose,
+        do_virtual=True, # TODO: make this available in function as arg
+        r_mon=particle_properties.monomer_size,
+        Df=particle_properties.Df,
+        kf=particle_properties.kf,
+    )
+    pres_out = atmo.p_layer
+    temp_out = atmo.t_layer
+    z_out = atmo.z
+
+
+    print("Starting optical calculations")
+    opd, w0, g0, opd_gas = calc_optics(
+        nwave,
+        qc,
+        qt,
+        rg,
+        reff,
+        ndz,
+        radius,
+        dr,
+        qext,
+        qscat,
+        cos_qscat,
+        atmo.sig,
+        rmin,
+        nradii,
+        verbose=False,
+    )
+
+    if atmo.param == "exp":
+        fsed_out = fsed_in * np.exp((atmo.z - atmo.z_alpha) / atmo.b) + atmo.eps
+    else:
+        fsed_out = fsed_in
+    return create_dict(
+        qc,
+        qt,
+        rg,
+        reff,
+        ndz,
+        opd,
+        w0,
+        g0,
+        opd_gas,
+        wave_in,
+        pres_out,
+        temp_out,
+        condensibles,
+        mh,
+        mmw,
+        fsed_out,
+        atmo.sig,
+        nradii,
+        rmin,
+        z_out,
+        atmo.dz_layer,
+        mixl,
+        atmo.kz,
+        atmo.scale_h,
+        z_cld,
+    )
 
 
 def compute_yasf(
