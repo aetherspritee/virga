@@ -89,7 +89,8 @@ def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",r_mon=0.01,kf=1.0,
     if mode == "sphere":
         return vfall(r,grav,mw_atmos, mfp, visc, t, p, rhop)
     elif mode == "fractal":
-        if Df < 2.5:
+        # FIXME: CURRENTLY ONLY USES OHNO NO MATTER WHAT
+        if Df < 0:
             print("this is wrong me thinks")
             print(f"{r_mon = }")
             print(f"{r = }")
@@ -457,7 +458,8 @@ def vfall_find_root_fractal(
 ):
     assert Df is not None, "Need a fractal dimension to use with fractal particle"
     assert r_mon is not None, "Need radius of monomers to use with fractal particle"
-    if Df < 2.5:
+    # FIXME: CURRENTLY ONLY USES OHNO NO MATTER WHAT
+    if Df < 0:
         # regular fall speed
         # FIXME: Dont like this _here_ either
         print("yayayayayaya")
