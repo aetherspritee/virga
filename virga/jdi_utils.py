@@ -4,6 +4,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 sys.path.append(os.path.dirname("/home/dsc/master/"))
 sys.path.append(os.path.dirname("/home/dsc/master/virga/"))
+sys.path.append(os.path.dirname("/Users/dusc/Code/master/"))
+sys.path.append(os.path.dirname("/Users/dusc/Code/master/virga/"))
 
 import pandas as pd
 import numpy as np
@@ -207,8 +209,12 @@ def hot_jupiter():
 def picaso_hot_jupiter(ref_data_dir = "/home/dsc/picaso/reference/"):
     ref_file =  os.path.join(ref_data_dir, 'base_cases','HJ.pt')
 
-    df = pd.read_csv(ref_file,delim_whitespace=True)
+    try:
+        df = pd.read_csv(ref_file,delim_whitespace=True)
 
+    except:
+        ref_file =  os.path.join("/Users/dusc/Code/picaso/reference/", 'base_cases','HJ.pt')
+        df = pd.read_csv(ref_file,delim_whitespace=True)
     return df[["pressure", "temperature", "kz"]]
 
 def brown_dwarf():

@@ -523,6 +523,7 @@ def compute_fractal(
 
     assert directory != None , "Need a directory for now"
 
+    directory = "/Users/dusc/virga-data/"
     # TODO: just use the default virga radii grid
     rmin, nradii = get_radii_tentatively(directory, condensibles[0])
     print(f"{rmin = }, {nradii = }")
@@ -878,11 +879,18 @@ def compute_yasf(
     )
 
 def get_radii_tentatively(directory: str, gas: str):
-    df = pd.read_csv(
-        os.path.join(directory, gas + ".mieff"),
-        names=["wave", "qscat", "qext", "cos_qscat"],
-        delim_whitespace=True,
-    )
+    try:
+        df = pd.read_csv(
+            os.path.join(directory, gas + ".mieff"),
+            names=["wave", "qscat", "qext", "cos_qscat"],
+            delim_whitespace=True,
+        )
+    except:
+        df = pd.read_csv(
+            os.path.join("/Users/dusc/virga-data/", gas + ".mieff"),
+            names=["wave", "qscat", "qext", "cos_qscat"],
+            delim_whitespace=True,
+        )
 
     nradii = int(df.iloc[0, 1])
 
@@ -1691,6 +1699,16 @@ def eddysed_fractal(
 
         z_cld = None
         layer_number = 0
+        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
+        time.sleep(5)
         for iz in range(nz - 1, -1, -1):  # goes from BOA to TOA
             (
                 qc[iz, i],

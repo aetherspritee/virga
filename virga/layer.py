@@ -194,14 +194,14 @@ def layer(
     )
     
     # TODO: attempt some storing of data here
-    with open("vfall_data.json", "a") as f:
-        pass
-    with open("vfall_data.json", "r") as f:
-        vfall_data = json.load(f)
-    vfall_data[f"layer{layer_num}"] = {"t": t_layer, "p": p_layer, "mfp": mfp, "visc": visc, "grav": gravity, "mw_atmos": mw_atmos, "w*": w_convect}
+    # with open("vfall_data.json", "a") as f:
+    #     pass
+    # with open("vfall_data.json", "r") as f:
+    #     vfall_data = json.load(f)
+    # vfall_data[f"layer{layer_num}"] = {"t": t_layer, "p": p_layer, "mfp": mfp, "visc": visc, "grav": gravity, "mw_atmos": mw_atmos, "w*": w_convect}
 
-    with open("vfall_data.json", "w") as f:
-        json.dump(vfall_data,f)
+    # with open("vfall_data.json", "w") as f:
+    #     json.dump(vfall_data,f)
     #   --------------------------------------------------------------------
     #   Top of convergence loop
     converge = False
@@ -1166,7 +1166,7 @@ def calc_qc_fractal(
         print(f"{r_mon = }")
         rlo = 10*r_mon
         rlo = 1e-10
-        rhi = 1e-4
+        rhi = 10
 
         print("=====================0")
         print(f"{rlo = }")
@@ -1196,6 +1196,22 @@ def calc_qc_fractal(
                             kf,
                         ),
                     )
+
+                    rw_temp2 = optimize.root_scalar(
+                        vfall_find_root,
+                        bracket=[rlo, rhi],
+                        method="brentq",
+                        args=(
+                            gravity,
+                            mw_atmos,
+                            mfp,
+                            visc,
+                            t_layer,
+                            p_layer,
+                            rho_p,
+                            w_convect,
+                        ),
+                    )
                 else:
                     rw_temp = solve_force_balance(
                         "rw",
@@ -1216,9 +1232,18 @@ def calc_qc_fractal(
                 rhi = rhi * 10
 
         # fall velocity particle radius
+        max_r = 0.1
+        min_r = 5*r_mon
         if og_vfall:
+            print(f"CHOSEN BALANCE R_W's::")
+            print(f"{rw_temp.root = }")
+            print(f"{rw_temp2.root = }")
+            # time.sleep(0.5)
             rw_layer = rw_temp.root
-            print(f"{rw_layer = }")
+            rw_layer2 = rw_temp2.root
+            # FIXME: Only trying this to solve big vfall issues, test and make sure this is ok
+            # if rw_layer > max_r or rw_layer < min_r:
+            #     rw_layer = rw_temp2.root
         else:
             rw_layer = rw_temp
 
@@ -1237,11 +1262,15 @@ def calc_qc_fractal(
         print("===============================")
         # time.sleep(5)
         vfall_temp = []
+        vfall_temp2 = []
         for j in range(len(r_)):
             if og_vfall:
                 print("correct!!")
                 vfall_temp.append(
                     var_vfall(r_[j], gravity, mw_atmos, mfp, visc, t_layer, p_layer, rho_p, mode="fractal", r_mon=r_mon,kf=kf, Df=Df)
+                )
+                vfall_temp2.append(
+                    vfall(r_[j], gravity, mw_atmos, mfp, visc, t_layer, p_layer, rho_p)
                 )
             else:
                 vlo = 1e0
@@ -1270,6 +1299,9 @@ def calc_qc_fractal(
                         vhi = vhi * 10
 
                         
+        # print(f"{vfall_temp = }")
+        # print("============================")
+        # print(f"{vfall_temp2 = }")
         vfall_file = Path("nakamura_fractal_vfall_info.json")
         vfall_data = {"layer0": {"radii": list(r_), "gravity": gravity, "mfp": mfp, "mw_atmos": mw_atmos, "visc": visc, "t_layer": t_layer, "p_layer": p_layer, "rho_p": rho_p, "r_mon": r_mon, "Df": Df, "kf": kf, "vfall": vfall_temp}}
         if not vfall_file.is_file():
@@ -1294,7 +1326,17 @@ def calc_qc_fractal(
             p0=[0],
             bounds=(-np.inf, np.inf),
         )
+
+        pars2, cov2 = optimize.curve_fit(
+            f=pow_law,
+            xdata=r_,
+            ydata=np.log(vfall_temp2),
+            p0=[0],
+            bounds=(-np.inf, np.inf),
+        )
+
         alpha = pars[0]
+        alpha2 = pars2[0]
 
         #   fsed at middle of layer
         if param == "exp":
@@ -1305,7 +1347,11 @@ def calc_qc_fractal(
         #     EQN. 13 A&M
         #   geometric mean radius of lognormal size distribution
         rg_layer = fsed_mid ** (1.0 / alpha) * rw_layer * np.exp(-(alpha + 6) * lnsig2)
-
+        rg_layer2 = fsed_mid ** (1.0 / alpha2) * rw_layer2 * np.exp(-(alpha2 + 6) * lnsig2)
+        print(f"{rg_layer = }")
+        print(f"==================")
+        print(f"{rg_layer2 = }")
+        # time.sleep(0.5)
         #   droplet effective radius (cm)
         reff_layer = rg_layer * np.exp(5 * lnsig2)
 
