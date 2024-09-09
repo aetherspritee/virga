@@ -1165,7 +1165,8 @@ def calc_qc_fractal(
         # FIXME: im not sure this is a smart idea, but i think its fine
         print(f"{r_mon = }")
         rlo = 10*r_mon
-        rhi = 10.0
+        rlo = 1e-10
+        rhi = 1e-4
 
         print("=====================0")
         print(f"{rlo = }")

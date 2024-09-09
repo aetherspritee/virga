@@ -97,9 +97,14 @@ def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",r_mon=0.01,kf=1.0,
             # return vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop, kf=kf,D=Df, Ragg=r)
             return vfall_aggregates_nakamura(r=r, grav=grav, mw_atmo=mw_atmos, t=t, p=p, mfp=mfp, visc=visc, rhop=rhop)
         else:
-            N = kf * (r/r_mon)**Df
-            rho_agg =  N* (4/3*np.pi*r_mon**3) * rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
-            return my_vfall_aggregrates_ohno(r, rho_agg, grav, mw_atmos, mfp, t,p)
+            if r < 10*r_mon:
+                return vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop)
+            else:
+                N = kf * (r/r_mon)**Df
+                rho_agg =  N* (4/3*np.pi*r_mon**3) * rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
+                print(f"{N = }, {r_mon = }, {r = }, {Df = }, {kf = }")
+                # time.sleep(1)
+                return my_vfall_aggregrates_ohno(r, rho_agg, grav, mw_atmos, mfp, t,p)
 
 def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
     """
@@ -470,9 +475,15 @@ def vfall_find_root_fractal(
         # time.sleep(2)
     else:
         # use ohno fall speed
-        N = kf * (r/r_mon)**Df
-        rho_agg =  N* (4/3*np.pi*r_mon**3) * rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
-        vfall_r = my_vfall_aggregrates_ohno(r,rho_agg, grav,mw_atmos, mfp, t, p)
+        if r < 10*r_mon:
+            vfall_r = vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop)
+            print(f"hg, {r = }")
+        else:
+            N = kf * (r/r_mon)**Df
+            rho_agg =  N* (4/3*np.pi*r_mon**3) * rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
+            print(f"{N = }, {r_mon = }, {r = }, {Df = }, {kf = }")
+            # time.sleep(1)
+            vfall_r = my_vfall_aggregrates_ohno(r, rho_agg, grav, mw_atmos, mfp, t,p)
 
     return vfall_r - w_convect
 
