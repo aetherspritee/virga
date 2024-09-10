@@ -99,7 +99,7 @@ def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",r_mon=0.01,kf=1.0,
             else:
                 N = kf * (r/r_mon)**Df
                 rho_agg =  N* (4/3*np.pi*r_mon**3) * rhop / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
-                print(f"{N = }, {r_mon = }, {r = }, {Df = }, {kf = }")
+                # print(f"{N = }, {r_mon = }, {r = }, {Df = }, {kf = }")
                 # time.sleep(1)
                 return my_vfall_aggregrates_ohno(r, rho_agg, grav, mw_atmos, mfp, t,p)
 
@@ -189,7 +189,7 @@ def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
     # if reynolds number is between 1-1000 we are in turbulent flow
     # limit
     if (reynolds > 1) and (reynolds <= 1e3):  #:#(reynolds >1e-2) and (reynolds <= 300)
-        print("slip")
+        # print("slip")
         # print("SLIIIIIIIIIIIIIIIIP")
         # print("SLIIIIIIIIIIIIIIIIP")
 
@@ -229,14 +229,14 @@ def vfall(r, grav, mw_atmos, mfp, visc, t, p, rhop):
         # print("TURBULENCEEEEEEEEEEEEEE")
         # print("TURBULENCEEEEEEEEEEEEEE")
         # print("TURBULENCEEEEEEEEEEEEEE")
-        print("turbo")
+        # print("turbo")
         # when Reynolds is greater than 1000, we can just use
         # an asymptotic value that is independent of Reynolds number
         # Eqn. B3 from A&M 01
         vfall_r = beta_slip * np.sqrt(8.0 * drho * r * grav / (3.0 * cdrag * rho_atmos))
-    if reynolds <=1:
-        print("laminar")
-    print(f"Classic vfall = {vfall_r} @ {r = }")
+    # if reynolds <=1:
+        # print("laminar")
+    # print(f"Classic vfall = {vfall_r} @ {r = }")
     return vfall_r
 
 def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, kf=1.0,D=2.0, Ragg=1.0):
@@ -278,12 +278,12 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, kf=1.0,D=2.0, Ragg=1.0):
 
     rho_atmos = (mw_atmos*p) / (R_GAS*t) #atmospheric density
     drho = rhop - rho_atmos
-    print(f"{grav = }")
-    print(f"{rhop = }")
-    print(f"{rho_atmos = }")
-    print(f"{drho = }")
+    # print(f"{grav = }")
+    # print(f"{rhop = }")
+    # print(f"{rho_atmos = }")
+    # print(f"{drho = }")
     v_thermal = np.sqrt((3*k*t)/mass) #root mean speed of the gas
-    print(f"{v_thermal = }")
+    # print(f"{v_thermal = }")
 
     N = kf * (Ragg/r)**D
     m_mon = rhop  * 4/3 * np.pi * r**3
@@ -294,13 +294,13 @@ def vfall_aggregrates(r, grav, mw_atmos, t, p, rhop, kf=1.0,D=2.0, Ragg=1.0):
     t_stop_epstein_r = (2.0/3.0) * (r*drho) / (rho_atmos*v_thermal) * kf * (Ragg/r)**(D-2)
     t_stop_epstein_2 = (2.0/3.0) * (Ragg*rho_agg)/(v_thermal * rho_atmos)
 
-    print(f"{Ragg = }")
-    print(f"{r = }")
-    print(f"{rho_agg = }")
+    # print(f"{Ragg = }")
+    # print(f"{r = }")
+    # print(f"{rho_agg = }")
     #print(f"{D = }")
     #print(f"{(Ragg/r)**(D-2) = }")
-    print(f"{t_stop_epstein_r = }")
-    print(f"{t_stop_epstein_2 = }")
+    # print(f"{t_stop_epstein_r = }")
+    # print(f"{t_stop_epstein_2 = }")
     vfall_epstein_agg_r = t_stop_epstein_r * grav 
 
     return vfall_epstein_agg_r
@@ -395,7 +395,7 @@ def vfall_aggregates_nakamura(r, grav, mw_atmo, mfp, visc, t, p, rhop, f=4):
     reynolds = 2.0 * r * rho_atmos * vfall_r / visc
 
     if (reynolds > 1) and (reynolds <= 1e3):  #:#(reynolds >1e-2) and (reynolds <= 300)
-        print("slip")
+        # print("slip")
         cd_nre2 = 1/f * 32.0 * r**3.0 * drho * rho_atmos * grav / (3.0 * visc**2)
         xx = np.log(cd_nre2)
         b0, b1, b2, b3, b4, b5, b6 = (
@@ -421,12 +421,12 @@ def vfall_aggregates_nakamura(r, grav, mw_atmo, mfp, visc, t, p, rhop, f=4):
         vfall_r = visc * reynolds / (2.0 * r * rho_atmos)
 
     if reynolds > 1e3:  # 300
-        print("turbo")
+        # print("turbo")
         vfall_r = beta_slip * np.sqrt(8.0 * drho * r * grav / (3.0 * cdrag * rho_atmos))
-    if reynolds <= 1:
-        print("laminar")
+    # if reynolds <= 1:
+    #     print("laminar")
 
-    print(f"{vfall_r = } @ {r = }")
+    # print(f"{vfall_r = } @ {r = }")
     return vfall_r
 
 def my_vfall_aggregrates_ohno(r_agg,rho_agg, grav,mw_atmos,mfp, t, p):
@@ -449,8 +449,8 @@ def my_vfall_aggregrates_ohno(r_agg,rho_agg, grav,mw_atmos,mfp, t, p):
     #visc = (1.0/3.0)*rho_atmos*v_thermal*mfp #viscosity of the atmosphere, appropriate for large Kn (Esptein)
     visc = 5.877e-6 * np.sqrt(t) #in dyne/cm^2 with t in K (via Woitke & Helling 2003)
     vfall_stokes = (2.0/9.0) * beta * grav * ((r_agg)**2) * (drho/visc)
-    print(f"{drho = }")
-    print(f"{vfall_stokes = }")
+    # print(f"{drho = }")
+    # print(f"{vfall_stokes = }")
     v_bracket = (1.0 + (((0.45/54.0) * (grav/((visc)**2)) * ((r_agg)**3) * rho_atmos * rho_agg)**(2./5.)))**(-5.0/4.0)
 
     vfall_r_ohno = vfall_stokes  * v_bracket
@@ -493,10 +493,10 @@ def vfall_find_root_fractal(
         else:
             N = kf * (r/r_mon)**Df
             rho_agg =  (N* (4/3*np.pi*r_mon**3) * rhop) / (4/3*np.pi*r**3) # mass over sphere-equivalent sphere-equivalent
-        print(f"{N = }, {r_mon = }, {r = }, {Df = }, {kf = }")
+        # print(f"{N = }, {r_mon = }, {r = }, {Df = }, {kf = }")
             # time.sleep(1)
         vfall_r = my_vfall_aggregrates_ohno(r, rho_agg, grav, mw_atmos, mfp, t,p)
-        print(f"{mfp = }, {t = }, {p = }, {mfp = }, {visc = }, {grav = }, {mw_atmos}, {rhop = }, {rho_agg = }, {w_convect = }, {vfall_r = }")
+        # print(f"{mfp = }, {t = }, {p = }, {mfp = }, {visc = }, {grav = }, {mw_atmos}, {rhop = }, {rho_agg = }, {w_convect = }, {vfall_r = }")
 
     return vfall_r - w_convect
 

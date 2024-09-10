@@ -1699,16 +1699,6 @@ def eddysed_fractal(
 
         z_cld = None
         layer_number = 0
-        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
-        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
-        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
-        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
-        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
-        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
-        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
-        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
-        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIII")
-        time.sleep(5)
         for iz in range(nz - 1, -1, -1):  # goes from BOA to TOA
             (
                 qc[iz, i],
