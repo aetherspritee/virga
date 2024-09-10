@@ -523,7 +523,7 @@ def compute_fractal(
 
     assert directory != None , "Need a directory for now"
 
-    directory = "/Users/dusc/virga-data/"
+    # directory = "/Users/dusc/virga-data/"
     # TODO: just use the default virga radii grid
     rmin, nradii = get_radii_tentatively(directory, condensibles[0])
     print(f"{rmin = }, {nradii = }")
@@ -544,15 +544,15 @@ def compute_fractal(
         radii, _, _ = get_r_grid(rmin, n_radii=nradii)
 
         particle_properties = Particle(list(radii),particle_props.monomer_size, particle_props.Df, particle_props.kf)
-        # if mode == "YASF":
-        #     print(f"I WILL BUILD A PARTICLE WITH {particle_properties.N} monomers!!")
+        if mode == "YASF" or mode == "MSTM":
+            print(f"I WILL BUILD A PARTICLE WITH {particle_properties.N} monomers!!")
 
         # # TODO: Adjust inputs here!
         # # TODO: Add func for MMF here aswell
-        # if not load_scat_props:
-        #     qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(particle_properties, igas, directory, mode=mode, store=store_scat_props)
-        # else:
-        #     qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = load_stored_fractal_scat_props(gas_name=igas,properties=particle_properties, mode=mode)
+        if not load_scat_props:
+            qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = calc_scattering(particle_properties, igas, directory, mode=mode, store=store_scat_props)
+        else:
+            qext_gas, qscat_gas, cos_qscat_gas, nwave, radius, wave_in = load_stored_fractal_scat_props(gas_name=igas,properties=particle_properties, mode=mode)
 
         # print(f"{qext_gas = }")
         # print(f"{qscat_gas = }")
@@ -2161,7 +2161,7 @@ def find_nearest_1d(array, value):
 
 
 def compute_vfall_fractal(atmo: Atmosphere,particle_props: Particle, directory):
-    directory = "/Users/dusc/virga-data/"
+    # directory = "/Users/dusc/virga-data/"
     results = {}
 
     mmw = atmo.mmw
