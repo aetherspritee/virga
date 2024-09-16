@@ -46,6 +46,7 @@ def calc_mieff(wave_in, nn,kk, radius, rup, fort_calc_mie=False):
     cos_qscat = np.zeros((nwave, nradii))
 
     for iwave in range(nwave):
+        print("WOOP")
         for irad in range(nradii):
 
             corerad = 0.0
@@ -55,13 +56,15 @@ def calc_mieff(wave_in, nn,kk, radius, rup, fort_calc_mie=False):
             wave = wave_in * 1e3  ## converting to nm
             ## averaging over 6 radial bins to avoid fluctuations
                 # arr = qext, qsca, qabs, g, qpr, qback, qratio
+            start = time.monotonic()
             arr = ps.MieQCoreShell(
                 corereal + (1j) * coreimag,
                 nn[iwave] + (1j) * kk[iwave],
                 wave[iwave],
                 dCore=0,
-                dShell=2.0 * radius[irad] * 1e7,
+                dShell=2.0 * radius[irad] * 1e7, 
             )
+            # print(f"Took {time.monotonic()-start}s !!")
 
             qext[iwave, irad] = arr[0]
             qscat[iwave, irad] = arr[1]
@@ -69,6 +72,36 @@ def calc_mieff(wave_in, nn,kk, radius, rup, fort_calc_mie=False):
 
     return qext, qscat, cos_qscat
 
+def calc_mieff_new(wave_in, nn,kk, radius, rup):
+    nwave = len(wave_in)  # number of wavalength bin centres for calculation
+
+    corerad = 0.0
+    corereal = 1.0
+    coreimag = 0.0
+    qext = np.zeros((nwave,))
+    qscat = np.zeros((nwave,))
+    cos_qscat = np.zeros((nwave,))
+    # FIXME: make sure radii have correct unit
+
+    sub_radii = 6
+    wave=wave_in*1e3  ## converting to nm 
+    ## averaging over 6 radial bins to avoid fluctuations
+    dr5= (( rup - radius ) / 5.)
+    rr= radius
+
+    for iwave in range(nwave):
+        for isub in range(sub_radii):
+            #arr = qext, qsca, qabs, g, qpr, qback, qratio
+            arr= ps.MieQCoreShell( corereal+(1j)*coreimag, 
+                                    nn[iwave]+(1j)*kk[iwave], 
+                                    wave[iwave],dCore=0,dShell=2.0*rr*1e3) # i did everything in µm for optool, so only *1e3 to get nm
+
+            qext[iwave]+= arr[0]
+            qscat[iwave]+= arr[1]
+            cos_qscat[iwave] += arr[3]*arr[1] 
+            rr+=dr5
+
+    return qext, qscat, cos_qscat
 
 
 def calc_new_mieff(wave_in, nn, kk, radius, rup, fort_calc_mie=False):
@@ -329,7 +362,7 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
 
     # ALL UNITS ARE IN CM! OPTOOL NEEDS µM!
     radii = list(np.array(properties.radii) * 1e4) # R_g done here, r_mon done below
-    print(f"{radii = }")
+    print(f"{radii[24:28] = }")
     print(f"{properties.monomer_size = }")
     print(f"{properties.N = }")
     print(f"{properties.Df = }")
@@ -338,7 +371,8 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
     rmin = float(np.min(radii))
     wave_in, _, _ = get_refrind(gas_name, data_dir)
 
-    _, rup, _ = get_r_grid(r_min=rmin, n_radii=nradii)
+    _, rup, _ = get_r_grid(r_min=rmin*1e-4, n_radii=nradii)
+    rup *= 1e4
     nwave = len(wave_in)  # number of wavalength bin centres for calculation
     # time.sleep(15)
     monomer_size = properties.monomer_size * 1e4
@@ -377,9 +411,11 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
         # refractive_index_table = [{"ref_idx": refractive_index_table[0], "material": refractive_index_table[1]}]
         for r_idx in range(len(radii)):
 
+            print("AWOOGA")
             if properties.N[r_idx] < 2:
-                refractive_index_table = read_virga_refrinds(gas_name, data_dir)[0].to_numpy()
-                qext, qscat, cos_qscat = calc_mieff(wave_in=wave_in,nn=refractive_index_table[:,1],kk=refractive_index_table[:,2],radius=radii,rup=rup)
+                start = time.monotonic()
+                q_ext, q_scat, cosqscat = calc_mieff_new(wave_in=wave_in,nn=refractive_index_table[:,1],kk=refractive_index_table[:,2],radius=radii[r_idx],rup=rup[r_idx])
+                print(f"Took {time.monotonic()-start}s for radius {radii[r_idx]}, rup = {rup[r_idx]}")
             else:
                 print(f"CURRENT RADIUS: {radii[r_idx]}")
                 print(f"CURRENT N: {properties.N[r_idx]}")
@@ -390,12 +426,12 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
                 p = mmf_parsing.run_optool(a=a,a0=monomer_size,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
                 q_scat = p.ksca
                 q_ext = p.kext
-                cos_qscat = p.gsca*q_scat
+                cosqscat = p.gsca*q_scat
                 # q_ext, q_scat = mmf_parsing.get_efficiencies(p, properties.N[r_idx], properties.rho, Df=properties.Df, kf=properties.kf)
             qext[:,r_idx] = q_ext
             qscat[:,r_idx] = q_scat
-            cos_qscat[:,r_idx] = cos_qscat
-            g0[:,r_idx] = p.gsca
+            cos_qscat[:,r_idx] = cosqscat
+            # g0[:,r_idx] = p.gsca
             
             
     elif mode == "MSTM":
@@ -510,7 +546,7 @@ def load_stored_fractal_scat_props(gas_name: str, properties: Particle, mode: st
 def read_virga_refrinds(gas_name: str, data_dir: Path):
     path = data_dir / Path(gas_name+".refrind")
     data = pd.read_csv(
-        path , delim_whitespace=True, header=0, names=["wavelength", "n", "k"]
+        path , delim_whitespace=True, header=None, names=["wavelength", "n", "k"]
     )
     # print(data)
 
