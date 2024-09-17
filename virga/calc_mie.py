@@ -86,10 +86,10 @@ def calc_mieff_new(wave_in, nn,kk, radius, rup):
     sub_radii = 6
     wave=wave_in*1e3  ## converting to nm 
     ## averaging over 6 radial bins to avoid fluctuations
-    dr5= (( rup - radius ) / 5.)
-    rr= radius
 
     for iwave in range(nwave):
+        dr5= (( rup - radius ) / 5.)
+        rr= radius
         for isub in range(sub_radii):
             #arr = qext, qsca, qabs, g, qpr, qback, qratio
             arr= ps.MieQCoreShell( corereal+(1j)*coreimag, 
@@ -100,7 +100,9 @@ def calc_mieff_new(wave_in, nn,kk, radius, rup):
             qscat[iwave]+= arr[1]
             cos_qscat[iwave] += arr[3]*arr[1] 
             rr+=dr5
-
+    qext /= sub_radii     
+    qscat /= sub_radii     
+    cos_qscat /= sub_radii
     return qext, qscat, cos_qscat
 
 
