@@ -359,7 +359,7 @@ def get_mie(gas, directory):
     return qext, qscat, cos_qscat, nwave, radii, wave
 
 
-def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: str="YASF", store=False, db_name="/home/dsc/virga-data"):
+def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: str="YASF", store=False, db_name="/home/dsc/virga-data", N_MAX=1024):
     assert (mode in VALID_MODES), "Only valid modes are 'YASF', 'MSTM' and 'MMF'"
 
     # ALL UNITS ARE IN CM! OPTOOL NEEDS µM!
@@ -419,12 +419,16 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
                 q_ext, q_scat, cosqscat = calc_mieff_new(wave_in=wave_in,nn=refractive_index_table[:,1],kk=refractive_index_table[:,2],radius=radii[r_idx],rup=rup[r_idx])
                 print(f"Took {time.monotonic()-start}s for radius {radii[r_idx]}, rup = {rup[r_idx]}")
             else:
+                if properties.N[r_idx] > N_MAX:
+                    monomer_size, n = resize_particle_properties(N_MAX, radii[r_idx], properties.kf, properties.Df)
                 print(f"CURRENT RADIUS: {radii[r_idx]}")
                 print(f"CURRENT N: {properties.N[r_idx]}")
                 print(f"CURRENT R0: {monomer_size}")
                 # r_agg != a, use formula provided in optool manual
-                a = (properties.N[r_idx]*(monomer_size)**3)**(1/3)
+                n = properties.N[r_idx]
+                a = (n*(monomer_size)**3)**(1/3)
                 print(f"CALCULATED a: {a}")
+                print(f"WANTED R: {radii[r_idx]}")
                 p = mmf_parsing.run_optool(a=a,a0=monomer_size,refrinds=refrinds[::-1],rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in[::-1])
                 q_scat = p.ksca[:,::-1]
                 q_ext = p.kext[:,::-1]
@@ -491,6 +495,11 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
 
 
     return qext, qscat, cos_qscat, nwave, radii ,wave_in
+
+def resize_particle_properties(n_max, radius, kf,Df):
+    # n = kf * (R/r_mon)**Df
+    r_mon = radius/((n_max/kf)**(1/Df))
+    return r_mon, n_max
 
 def load_stored_fractal_scat_props(gas_name: str, properties: Particle, mode: str, data_dir: Path=Path("/home/dsc/virga-data/")):
     r_mon = np.round(properties.monomer_size * 1e4,2)

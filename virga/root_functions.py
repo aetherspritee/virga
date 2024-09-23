@@ -12,6 +12,8 @@ from scipy.stats import lognorm
 from scipy.integrate import quad, simps
 from scipy import optimize
 import time
+import json
+from scipy.interpolate import CubicSpline
 
 def advdiff(
     qt,
@@ -91,8 +93,11 @@ def var_vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop,mode="sphere",r_mon=0.01,kf=1.0,
     elif mode == "fractal":
         # FIXME: CURRENTLY ONLY USES OHNO NO MATTER WHAT
         if Df < 2.5:
+            N = int(kf * (r/r_mon)**Df)
+            func,params = get_f_factor("f_factor.json")
+            f = func(N,*params)
             # return vfall_aggregrates(r_mon, grav, mw_atmos, t, p, rhop, kf=kf,D=Df, Ragg=r)
-            return vfall_aggregates_nakamura(r=r, grav=grav, mw_atmo=mw_atmos, t=t, p=p, mfp=mfp, visc=visc, rhop=rhop)
+            return vfall_aggregates_nakamura(r=r, grav=grav, mw_atmo=mw_atmos, t=t, p=p, mfp=mfp, visc=visc, rhop=rhop,f=f)
         else:
             if r < 10*r_mon:
                 return vfall(r,grav,mw_atmos,mfp,visc,t,p,rhop)
@@ -773,3 +778,28 @@ def find_rg(rg, fsed, rw, alpha, s, loc=0.0, dist="lognormal"):
     return fsed - moment(3 + alpha, s, loc, rg, dist) / rw**alpha / moment(
         3, s, loc, rg, dist
     )
+
+def get_f_factor(saved_file: str):
+
+    N_MIN = 32
+    N_MAX = 512
+    N_IT = N_MAX - N_MIN + 1
+    N = np.linspace(N_MIN,N_MAX,N_IT, dtype=int)
+    N = np.insert(N,0,1)
+    ext_n = np.linspace(1,np.max(N), N.size+np.min(N))
+
+    with open(saved_file, "r") as f:
+        data = json.load(f)
+    N = data["n"]
+    f = data["f"]
+    fit = CubicSpline(N,f, bc_type='not-a-knot')
+    fs = []
+    print(f"NEW:: {ext_n}")
+    for nn in ext_n:
+        fs.append(float(fit(nn,nu=0)))
+
+    def f_func(x, a, b, c):
+        return a*x + (b * np.power(x,c))
+    popt, pcov = curve_fit(f_func, ext_n, fs, p0=[0.24,0.52,0.84])
+    plt.show()
+    return f_func,popt
