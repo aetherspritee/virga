@@ -425,10 +425,10 @@ def calc_scattering(properties: Particle, gas_name: str, data_dir: Path, mode: s
                 # r_agg != a, use formula provided in optool manual
                 a = (properties.N[r_idx]*(monomer_size)**3)**(1/3)
                 print(f"CALCULATED a: {a}")
-                p = mmf_parsing.run_optool(a=a,a0=monomer_size,refrinds=refrinds,rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in)
-                q_scat = p.ksca
-                q_ext = p.kext
-                cosqscat = p.gsca*q_scat
+                p = mmf_parsing.run_optool(a=a,a0=monomer_size,refrinds=refrinds[::-1],rho=properties.rho,df=properties.Df,kf=properties.kf, wavelengths=wave_in[::-1])
+                q_scat = p.ksca[:,::-1]
+                q_ext = p.kext[:,::-1]
+                cosqscat = (p.gsca*q_scat)[:,::-1]
                 # q_ext, q_scat = mmf_parsing.get_efficiencies(p, properties.N[r_idx], properties.rho, Df=properties.Df, kf=properties.kf)
             qext[:,r_idx] = q_ext
             qscat[:,r_idx] = q_scat
